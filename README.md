@@ -15,8 +15,8 @@ Steigung in z Richtung nehmen und Übergang berechnen)
 animieren, um 4 Punkte zu erreichen)
 
 Orginalität: Glättungsfunktion nach Diamond-Square Algorithmus, dass
-nicht so eckig wird sondern "runder"
+nicht so eckig wird sondern "runder"  
 Direkt Windows Build abgeben anstatt Unity Projekt bzw. Szene
 
-A1, A2 in Skript
+A1, A2 in Skript  
 A3, A4 primär in Shader
