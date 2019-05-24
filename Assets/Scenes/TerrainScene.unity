@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 581485718}
   - component: {fileID: 581485717}
   - component: {fileID: 581485716}
-  - component: {fileID: 581485715}
+  - component: {fileID: 581485719}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -139,50 +139,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &581485715
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 581485714}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1756fc30b6444de4aa97fd84b9c6d0a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  xSize: 20
-  zSize: 20
-  heightScale: 3
-  gradient:
-    serializedVersion: 2
-    key0: {r: 0.049439307, g: 0.1909801, b: 0.9528302, a: 1}
-    key1: {r: 0.12803093, g: 0.44382438, b: 0.64485765, a: 1}
-    key2: {r: 0.21586864, g: 0.7264151, b: 0.300653, a: 0}
-    key3: {r: 0.9339623, g: 0.9244578, b: 0.118948035, a: 0}
-    key4: {r: 0.9528302, g: 0.085395135, b: 0.085395135, a: 0}
-    key5: {r: 0, g: 0, b: 0, a: 0}
-    key6: {r: 0, g: 0, b: 0, a: 0}
-    key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 0
-    ctime1: 6361
-    ctime2: 20817
-    ctime3: 49537
-    ctime4: 65535
-    ctime5: 0
-    ctime6: 0
-    ctime7: 0
-    atime0: 0
-    atime1: 65535
-    atime2: 0
-    atime3: 0
-    atime4: 0
-    atime5: 0
-    atime6: 0
-    atime7: 0
-    m_Mode: 0
-    m_NumColorKeys: 5
-    m_NumAlphaKeys: 2
 --- !u!23 &581485716
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -242,6 +198,50 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &581485719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 581485714}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46965b4018e5cd84db0a9dce978a1213, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  meshSize: 20
+  meshDivisions: 40
+  meshHeight: 1
+  gradient:
+    serializedVersion: 2
+    key0: {r: 0.049439307, g: 0.1909801, b: 0.9528302, a: 1}
+    key1: {r: 0.12803093, g: 0.44382438, b: 0.64485765, a: 1}
+    key2: {r: 0.21586864, g: 0.7264151, b: 0.300653, a: 0}
+    key3: {r: 0.9339623, g: 0.9244578, b: 0.118948035, a: 0}
+    key4: {r: 0.9528302, g: 0.085395135, b: 0.085395135, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 6361
+    ctime2: 20817
+    ctime3: 49537
+    ctime4: 65535
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_NumColorKeys: 5
+    m_NumAlphaKeys: 2
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
