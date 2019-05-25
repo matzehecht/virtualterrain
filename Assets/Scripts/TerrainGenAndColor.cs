@@ -7,6 +7,7 @@ using UnityEngine;
 public class TerrainGenAndColor : MonoBehaviour
 {
     Mesh mesh;
+    MeshCollider mc;
     // vertices, triangles and color array for mesh generation
     Vector3[] vertices;
     int[] triangles;
@@ -25,11 +26,25 @@ public class TerrainGenAndColor : MonoBehaviour
 
     float minTerrainHeight;
     float maxTerrainHeight;
+    bool activeClick;
+    float ROTSpeed = 10;
+
+    Vector3 clickpos;
+    Vector3 lastClick;
+    Vector3 activeVert;
+    int indexActiveVert = 0;
 
     // Start is called before the first frame update
     void Start()
     {
         CreateShape();
+    }
+
+    // Update is called once per frame
+    private void Update()
+    {
+        manipulate_Mesh_Mouse();
+        update_Mesh();
     }
 
     void CreateShape()
@@ -47,6 +62,11 @@ public class TerrainGenAndColor : MonoBehaviour
         // add new mesh object to the mesh filter defined on the empty game object
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
+        //add Mesh Collider for detecting mouse clicks on mesh
+        mc = gameObject.AddComponent<MeshCollider>() as MeshCollider;
+        mc.sharedMesh = mesh;
+        activeClick = false;
+
 
         float halfSize = meshSize * 0.5f;
         float divisionSize = meshSize / meshDivisions;
@@ -113,7 +133,7 @@ public class TerrainGenAndColor : MonoBehaviour
             {
                 float height = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, vertices[c].y);
                 colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
-                Debug.Log(c);
+                //Debug.Log(c);
                 c++;
             }
         }
@@ -150,5 +170,93 @@ public class TerrainGenAndColor : MonoBehaviour
 
         if (minValue < minTerrainHeight)
             minTerrainHeight = minValue;
+    }
+
+    //function for manipulating the mesh based on mouse input
+    void manipulate_Mesh_Mouse(){
+        //on update check if eft mouse key was pressed
+        if(Input.GetMouseButton(0)){
+            
+            //Debug.Log("Left mouse key pressed");
+
+            activeClick = true;
+
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (mc.Raycast(ray, out hit, 200.0f))
+            {
+                Debug.Log("hit mesh");
+                clickpos = hit.point;
+                Debug.Log(clickpos);
+                lastClick = clickpos;
+                Vector3 nearestVertex = Vector3.zero;
+                int index = 0;
+                float minDistanceSqr = Mathf.Infinity;
+
+                foreach (Vector3 vertex in mesh.vertices)
+                {
+                    Vector3 diff = lastClick - vertex;
+                    float distSqr = diff.sqrMagnitude;
+                    if (distSqr < minDistanceSqr)
+                    {
+                        indexActiveVert = index;
+                        minDistanceSqr = distSqr;
+                        nearestVertex = vertex;
+                    }
+                    index++;
+                }
+                activeVert = nearestVertex;
+            }
+            else
+            {   
+                activeClick = false;
+            }
+        
+            if (activeClick)
+            {   
+
+                Vector2 delta = Input.mouseScrollDelta;
+
+                if (delta.y != 0)
+                {
+                    Vector3[] verts = mesh.vertices;
+                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 0.1f));
+                    mesh.RecalculateBounds();
+                    mesh.RecalculateNormals();
+                }
+            }
+        }
+    }
+    Vector3[] moveVerts(Vector3[] verts, int indexActiveVert, float delta){
+        Vector3[] resultVerts = verts;
+        for(int i = 0; i < verts.Length; i++){
+            if(i == indexActiveVert){
+                //Debug.Log(resultVerts[i].y);
+                //Debug.Log(delta);
+                if((resultVerts[i].y += delta) < 0){
+                    resultVerts[i].y = 0;
+                }
+            }
+        }
+        return resultVerts;
+    }
+
+    void update_Mesh(){
+        //recalculate colors
+        for (int c = 0, i = 0; i <= meshDivisions; i++)
+        {
+            for (int j = 0; j <= meshDivisions; j++)
+            {
+                float height = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, mesh.vertices[c].y);
+                colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
+                //Debug.Log(c);
+                c++;
+            }
+        }
+        
+        mesh.triangles = triangles;
+        mesh.colors = colors;
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
     }
 }
