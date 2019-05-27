@@ -13,22 +13,21 @@ public class TerrainGenAndColor : MonoBehaviour
     int[] triangles;
     Color[] colors;
 
-    // --- public variables are editable in the Unity Inspector afterwards
+    // base height of the mesh (editable in the IDE)
+    public float meshHeight = 4;
     // size of the mesh (equal x and z size --> square)
-    public float meshSize;
+    float meshSize = 30;
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
-    public int meshDivisions;
-    // base height of the mesh
-    public float meshHeight;
+    int meshDivisions = 64;
 
     // gradient (colormap) for the terrain
-    public Gradient gradient;
-
-    float minTerrainHeight;
+    Gradient gradient;
+    GradientColorKey[] colorKey;
+    GradientAlphaKey[] alphaKey;
     float maxTerrainHeight;
-    bool activeClick;
-    float ROTSpeed = 10;
 
+    // init variables for click interactions with the terrain
+    bool activeClick = false;
     Vector3 clickpos;
     Vector3 lastClick;
     Vector3 activeVert;
@@ -37,6 +36,32 @@ public class TerrainGenAndColor : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // add new mesh object to the mesh filter and mesh collider defined on the empty game object
+        mesh = new Mesh();
+        GetComponent<MeshFilter>().mesh = mesh;
+        mc = GetComponent<MeshCollider>();
+        mc.sharedMesh = mesh;
+
+        // Populate the color keys at the relative time 0, 0.5 and 1 (0, 50 and 100%)
+        // results in a colormap from green (low areas) over yellow to red (high areas)
+        gradient = new Gradient();
+        colorKey = new GradientColorKey[3];
+        colorKey[0].color = Color.green;
+        colorKey[0].time = 0.0f;
+        colorKey[1].color = Color.yellow;
+        colorKey[1].time = 0.5f;
+        colorKey[2].color = Color.red;
+        colorKey[2].time = 1.0f;
+
+        // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
+        alphaKey = new GradientAlphaKey[2];
+        alphaKey[0].alpha = 1.0f;
+        alphaKey[0].time = 0.0f;
+        alphaKey[1].alpha = 1.0f;
+        alphaKey[1].time = 1.0f;
+
+        gradient.SetKeys(colorKey, alphaKey);
+
         CreateShape();
     }
 
@@ -44,7 +69,6 @@ public class TerrainGenAndColor : MonoBehaviour
     private void Update()
     {
         manipulate_Mesh_Mouse();
-        update_Mesh();
     }
 
     void CreateShape()
@@ -59,15 +83,6 @@ public class TerrainGenAndColor : MonoBehaviour
         // define count of triangle points (6 for one mesh square)
         triangles = new int[meshDivisions * meshDivisions * 6];
 
-        // add new mesh object to the mesh filter defined on the empty game object
-        mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = mesh;
-        //add Mesh Collider for detecting mouse clicks on mesh
-        mc = gameObject.AddComponent<MeshCollider>() as MeshCollider;
-        mc.sharedMesh = mesh;
-        activeClick = false;
-
-
         float halfSize = meshSize * 0.5f;
         float divisionSize = meshSize / meshDivisions;
         int triOffset = 0;
@@ -78,7 +93,7 @@ public class TerrainGenAndColor : MonoBehaviour
             for (int j = 0; j <= meshDivisions; j++)
             {
                 // assign vertex position with x, y (0 -> will be set afterwards) and z coordinate
-                vertices[i*(meshDivisions+1)+j] = new Vector3(-halfSize + j*divisionSize, 0.0f, halfSize - i*divisionSize);
+                vertices[i * (meshDivisions + 1) + j] = new Vector3(-halfSize + j * divisionSize, 0.0f, halfSize - i * divisionSize);
 
                 // set triangle points
                 if (i < meshDivisions && j < meshDivisions)
@@ -127,14 +142,21 @@ public class TerrainGenAndColor : MonoBehaviour
             meshHeight *= 0.5f;
         }
 
-        for (int c = 0, i = 0; i <= meshDivisions; i++)
+        for (int i = 0; i <= meshDivisions; i++)
         {
             for (int j = 0; j <= meshDivisions; j++)
             {
-                float height = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, vertices[c].y);
-                colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
-                //Debug.Log(c);
-                c++;
+                if (vertices[i * (meshDivisions + 1) + j].y < 0)
+                {
+                    vertices[i * (meshDivisions + 1) + j].y = 0;
+                    colors[i * (meshDivisions + 1) + j] = Color.blue;
+                }
+
+                else
+                {
+                    float height = Mathf.InverseLerp(0, maxTerrainHeight, vertices[i * (meshDivisions + 1) + j].y);
+                    colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
+                }
             }
         }
 
@@ -157,28 +179,24 @@ public class TerrainGenAndColor : MonoBehaviour
 
         vertices[topLeft + halfSize].y = (vertices[topLeft].y + vertices[topLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[mid - halfSize].y = (vertices[topLeft].y + vertices[botLeft].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
-        vertices[mid + halfSize].y = (vertices[topLeft+size].y + vertices[botLeft+size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
-        vertices[botLeft+halfSize].y = (vertices[botLeft].y + vertices[botLeft+size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
+        vertices[mid + halfSize].y = (vertices[topLeft + size].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
+        vertices[botLeft + halfSize].y = (vertices[botLeft].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
 
         float maxValue = Math.Max(vertices[mid].y, Math.Max(vertices[topLeft + halfSize].y, Math.Max(vertices[mid - halfSize].y, Math.Max(vertices[mid + halfSize].y, vertices[botLeft + halfSize].y))));
-        float minValue = Math.Min(vertices[mid].y, Math.Min(vertices[topLeft + halfSize].y, Math.Min(vertices[mid - halfSize].y, Math.Min(vertices[mid + halfSize].y, vertices[botLeft + halfSize].y))));
 
-        // set the maximum and minimum terrain height variables for the
+        // set the maximum terrain height variable for the
         // colorizing of the terrain afterwards over a gradient
         if (maxValue > maxTerrainHeight)
             maxTerrainHeight = maxValue;
-
-        if (minValue < minTerrainHeight)
-            minTerrainHeight = minValue;
     }
 
     //function for manipulating the mesh based on mouse input
-    void manipulate_Mesh_Mouse(){
+    void manipulate_Mesh_Mouse()
+    {
         //on update check if eft mouse key was pressed
-        if(Input.GetMouseButton(0)){
-            
+        if (Input.GetMouseButton(0))
+        {
             //Debug.Log("Left mouse key pressed");
-
             activeClick = true;
 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -208,12 +226,12 @@ public class TerrainGenAndColor : MonoBehaviour
                 activeVert = nearestVertex;
             }
             else
-            {   
+            {
                 activeClick = false;
             }
-        
+
             if (activeClick)
-            {   
+            {
 
                 Vector2 delta = Input.mouseScrollDelta;
 
@@ -221,19 +239,23 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     Vector3[] verts = mesh.vertices;
                     mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 0.1f));
-                    mesh.RecalculateBounds();
-                    mesh.RecalculateNormals();
+                    update_Mesh();
                 }
             }
         }
     }
-    Vector3[] moveVerts(Vector3[] verts, int indexActiveVert, float delta){
+
+    Vector3[] moveVerts(Vector3[] verts, int indexActiveVert, float delta)
+    {
         Vector3[] resultVerts = verts;
-        for(int i = 0; i < verts.Length; i++){
-            if(i == indexActiveVert){
+        for (int i = 0; i < verts.Length; i++)
+        {
+            if (i == indexActiveVert)
+            {
                 //Debug.Log(resultVerts[i].y);
                 //Debug.Log(delta);
-                if((resultVerts[i].y += delta) < 0){
+                if ((resultVerts[i].y += delta) < 0)
+                {
                     resultVerts[i].y = 0;
                 }
             }
@@ -241,21 +263,26 @@ public class TerrainGenAndColor : MonoBehaviour
         return resultVerts;
     }
 
-    void update_Mesh(){
+    void update_Mesh()
+    {
         //recalculate colors
-        for (int c = 0, i = 0; i <= meshDivisions; i++)
+        for (int i = 0; i <= meshDivisions; i++)
         {
             for (int j = 0; j <= meshDivisions; j++)
             {
-                float height = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, mesh.vertices[c].y);
-                colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
-                //Debug.Log(c);
-                c++;
+                if (mesh.vertices[i * (meshDivisions + 1) + j].y < 0)
+                {
+                    mesh.vertices[i * (meshDivisions + 1) + j].y = 0;
+                    mesh.colors[i * (meshDivisions + 1) + j] = Color.blue;
+                }
+                else
+                {
+                    float height = Mathf.InverseLerp(0, maxTerrainHeight, mesh.vertices[i * (meshDivisions + 1) + j].y);
+                    mesh.colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
+                }
             }
         }
-        
-        mesh.triangles = triangles;
-        mesh.colors = colors;
+
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
     }
