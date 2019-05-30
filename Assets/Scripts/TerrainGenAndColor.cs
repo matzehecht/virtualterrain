@@ -8,10 +8,11 @@ public class TerrainGenAndColor : MonoBehaviour
 {
     Mesh mesh;
     MeshCollider mc;
-    // vertices, triangles and color array for mesh generation
+    Renderer rend;
+    // vertices, triangles and uv array for mesh generation
     Vector3[] vertices;
     int[] triangles;
-    Color[] colors;
+    Vector2[] uvs;
 
     // base height of the mesh (editable in the IDE)
     public float meshHeight = 4;
@@ -20,11 +21,9 @@ public class TerrainGenAndColor : MonoBehaviour
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
     int meshDivisions = 64;
 
-    // gradient (colormap) for the terrain
-    Gradient gradient;
-    GradientColorKey[] colorKey;
-    GradientAlphaKey[] alphaKey;
+    // variables for maximum terrain height and binary water texture for color calculation in the shader afterwards
     float maxTerrainHeight;
+    Texture2D waterTex;
 
     // init variables for click interactions with the terrain
     bool activeClick = false;
@@ -42,25 +41,7 @@ public class TerrainGenAndColor : MonoBehaviour
         mc = GetComponent<MeshCollider>();
         mc.sharedMesh = mesh;
 
-        // Populate the color keys at the relative time 0, 0.5 and 1 (0, 50 and 100%)
-        // results in a colormap from green (low areas) over yellow to red (high areas)
-        gradient = new Gradient();
-        colorKey = new GradientColorKey[3];
-        colorKey[0].color = Color.green;
-        colorKey[0].time = 0.0f;
-        colorKey[1].color = Color.yellow;
-        colorKey[1].time = 0.5f;
-        colorKey[2].color = Color.red;
-        colorKey[2].time = 1.0f;
-
-        // Populate the alpha  keys at relative time 0 and 1  (0 and 100%)
-        alphaKey = new GradientAlphaKey[2];
-        alphaKey[0].alpha = 1.0f;
-        alphaKey[0].time = 0.0f;
-        alphaKey[1].alpha = 1.0f;
-        alphaKey[1].time = 1.0f;
-
-        gradient.SetKeys(colorKey, alphaKey);
+        rend = GetComponent<Renderer>();
 
         CreateShape();
     }
@@ -73,15 +54,18 @@ public class TerrainGenAndColor : MonoBehaviour
 
     void CreateShape()
     {
-        // define vertex count 
+        // define vertex and uv count 
         // need one more vertex on each coordinate than the defined division size
         // (e.g. need 3*3 vertices for a plane out of 4 squares)
         int mVertCount = (meshDivisions + 1) * (meshDivisions + 1);
         vertices = new Vector3[mVertCount];
-        colors = new Color[vertices.Length];
+        uvs = new Vector2[mVertCount];
 
         // define count of triangle points (6 for one mesh square)
         triangles = new int[meshDivisions * meshDivisions * 6];
+
+        // define new texture with size of mesh divisions + 1
+        waterTex = new Texture2D(meshDivisions+1, meshDivisions+1);
 
         float halfSize = meshSize * 0.5f;
         float divisionSize = meshSize / meshDivisions;
@@ -95,18 +79,21 @@ public class TerrainGenAndColor : MonoBehaviour
                 // assign vertex position with x, y (0 -> will be set afterwards) and z coordinate
                 vertices[i * (meshDivisions + 1) + j] = new Vector3(-halfSize + j * divisionSize, 0.0f, halfSize - i * divisionSize);
 
+                // assign uv vector
+                uvs[i * (meshDivisions + 1) + j] = new Vector2((float)i / meshDivisions, (float)j / meshDivisions);
+
                 // set triangle points
                 if (i < meshDivisions && j < meshDivisions)
                 {
                     int topLeft = i * (meshDivisions + 1) + j;
                     int botLeft = (i + 1) * (meshDivisions + 1) + j;
 
-                    // first triangle (bottom left, top left, bottom right of a quad)
+                    // first triangle (top left, top right, bottom right of a quad)
                     triangles[triOffset] = topLeft;
                     triangles[triOffset + 1] = topLeft + 1;
                     triangles[triOffset + 2] = botLeft + 1;
 
-                    // second triangle (bottom right, top left, top right of a quad)
+                    // second triangle (top left, bottom right, bottom left of a quad)
                     triangles[triOffset + 3] = topLeft;
                     triangles[triOffset + 4] = botLeft + 1;
                     triangles[triOffset + 5] = botLeft;
@@ -116,11 +103,13 @@ public class TerrainGenAndColor : MonoBehaviour
             }
         }
 
+        // initiate the corner points with random values of the available height space
         vertices[0].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
         vertices[meshDivisions].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
         vertices[vertices.Length - 1].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
         vertices[vertices.Length - 1 - meshDivisions].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
 
+        // calculate the diamond square algorithm and set the terrain heights
         int iterations = (int)Mathf.Log(meshDivisions, 2);
         int numSquares = 1;
         int squareSize = meshDivisions;
@@ -142,32 +131,42 @@ public class TerrainGenAndColor : MonoBehaviour
             meshHeight *= 0.5f;
         }
 
+        // reset negative height values to 0 and set pixels of the water texture
+        // --> water pixels (height value 0) to white, terrain pixels (height value > 0) to black
         for (int i = 0; i <= meshDivisions; i++)
         {
             for (int j = 0; j <= meshDivisions; j++)
             {
-                if (vertices[i * (meshDivisions + 1) + j].y < 0)
+                if (vertices[i * (meshDivisions + 1) + j].y <= 0)
                 {
                     vertices[i * (meshDivisions + 1) + j].y = 0;
-                    colors[i * (meshDivisions + 1) + j] = Color.blue;
+                    waterTex.SetPixel(i, j, Color.white);
                 }
-
                 else
                 {
-                    float height = Mathf.InverseLerp(0, maxTerrainHeight, vertices[i * (meshDivisions + 1) + j].y);
-                    colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
+                    waterTex.SetPixel(i, j, Color.black);
                 }
             }
         }
 
+        // apply the calculated texture
+        waterTex.Apply();
+
+        // set the calculated maximum terrain height and water texture to the material, 
+        // that the shader can work with this information
+        rend.material.SetFloat("_maxTerrainHeight", maxTerrainHeight);
+        rend.material.SetTexture("_WaterTex", waterTex);
+
+        // set mesh data and recalculate bounds and normals of the mesh afterwards
         mesh.vertices = vertices;
+        mesh.uv = uvs;
         mesh.triangles = triangles;
-        mesh.colors = colors;
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
     }
 
+    // function for the calculation of the diamond square algorithm
     void DiamondSquare(int row, int col, int size, float offset)
     {
         int halfSize = (int)(size * 0.5f);
@@ -182,10 +181,8 @@ public class TerrainGenAndColor : MonoBehaviour
         vertices[mid + halfSize].y = (vertices[topLeft + size].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[botLeft + halfSize].y = (vertices[botLeft].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
 
+        // set the maximum terrain height variable for the shader
         float maxValue = Math.Max(vertices[mid].y, Math.Max(vertices[topLeft + halfSize].y, Math.Max(vertices[mid - halfSize].y, Math.Max(vertices[mid + halfSize].y, vertices[botLeft + halfSize].y))));
-
-        // set the maximum terrain height variable for the
-        // colorizing of the terrain afterwards over a gradient
         if (maxValue > maxTerrainHeight)
             maxTerrainHeight = maxValue;
     }
@@ -239,6 +236,7 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     Vector3[] verts = mesh.vertices;
                     mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 0.1f));
+
                     update_Mesh();
                 }
             }
@@ -263,25 +261,41 @@ public class TerrainGenAndColor : MonoBehaviour
         return resultVerts;
     }
 
+    // function to recalculate the maximum terrain height and the water texture for the shader
     void update_Mesh()
     {
-        //recalculate colors
+        // reset maximum terrain height for the new calculation
+        maxTerrainHeight = 0;
+
+        // reset negative height values to 0 and set pixels of the water texture
+        // --> water pixels (height value 0) to white, terrain pixels (height value > 0) to black
         for (int i = 0; i <= meshDivisions; i++)
         {
             for (int j = 0; j <= meshDivisions; j++)
             {
-                if (mesh.vertices[i * (meshDivisions + 1) + j].y < 0)
+                if (mesh.vertices[i * (meshDivisions + 1) + j].y <= 0)
                 {
                     mesh.vertices[i * (meshDivisions + 1) + j].y = 0;
-                    mesh.colors[i * (meshDivisions + 1) + j] = Color.blue;
+                    waterTex.SetPixel(i, j, Color.white);
                 }
                 else
                 {
-                    float height = Mathf.InverseLerp(0, maxTerrainHeight, mesh.vertices[i * (meshDivisions + 1) + j].y);
-                    mesh.colors[i * (meshDivisions + 1) + j] = gradient.Evaluate(height);
+                    if(mesh.vertices[i*(meshDivisions+1) + j].y > maxTerrainHeight)
+                    {
+                        maxTerrainHeight = mesh.vertices[i * (meshDivisions + 1) + j].y;
+                    }
+                    waterTex.SetPixel(i, j, Color.black);
                 }
             }
         }
+
+        // apply the calculated texture
+        waterTex.Apply();
+
+        // set the calculated maximum terrain height and water texture to the material, 
+        // that the shader can work with this information
+        rend.material.SetFloat("_maxTerrainHeight", maxTerrainHeight);
+        rend.material.SetTexture("_WaterTex", waterTex);
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
