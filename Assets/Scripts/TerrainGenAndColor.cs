@@ -31,6 +31,7 @@ public class TerrainGenAndColor : MonoBehaviour
     Vector3 lastClick;
     Vector3 activeVert;
     int indexActiveVert = 0;
+    double variance = 2;
 
     // Start is called before the first frame update
     void Start()
@@ -198,11 +199,11 @@ public class TerrainGenAndColor : MonoBehaviour
 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (mc.Raycast(ray, out hit, 200.0f))
+            if (mc.Raycast(ray, out hit, 5000.0f))
             {
-                Debug.Log("hit mesh");
+                //Debug.Log("hit mesh");
                 clickpos = hit.point;
-                Debug.Log(clickpos);
+                //Debug.Log(clickpos);
                 lastClick = clickpos;
                 Vector3 nearestVertex = Vector3.zero;
                 int index = 0;
@@ -236,7 +237,6 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     Vector3[] verts = mesh.vertices;
                     mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 0.1f));
-
                     update_Mesh();
                 }
             }
@@ -250,12 +250,39 @@ public class TerrainGenAndColor : MonoBehaviour
         {
             if (i == indexActiveVert)
             {
-                //Debug.Log(resultVerts[i].y);
-                //Debug.Log(delta);
-                if ((resultVerts[i].y += delta) < 0)
+                //Debug.Log(resultVerts[i].y); //Debug.Log(delta);if ((resultVerts[i].y += delta) < 0){resultVerts[i].y = 0;}
+                //x direction to the right
+                for(int j = i; j < i+4; j++)
                 {
-                    resultVerts[i].y = 0;
+                    if(delta<0){
+                        resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j+meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                    } else{
+                        resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j+meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                    }
+                    if(resultVerts[j].y < 0)
+                    {
+                        resultVerts[j].y = 0;
+                    }
                 }
+                //x direction to the left
+                for(int j = i; j < i-4; j--)
+                {
+                    if(delta<0){
+                        resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j-meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                    } else{
+                        resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j-meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                    }
+                    if(resultVerts[j].y < 0)
+                    {
+                        resultVerts[j].y = 0;
+                    }
+                }
+                //resultVerts[i].y = resultVerts[i].y*2;
+                
             }
         }
         return resultVerts;
