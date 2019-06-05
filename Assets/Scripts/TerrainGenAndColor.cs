@@ -38,6 +38,8 @@ public class TerrainGenAndColor : MonoBehaviour
     {
         // add new mesh object to the mesh filter and mesh collider defined on the empty game object
         mesh = new Mesh();
+        //set index format to 32 bit, -> more than 65K vertices can be rendered
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         GetComponent<MeshFilter>().mesh = mesh;
         mc = GetComponent<MeshCollider>();
         mc.sharedMesh = mesh;
@@ -165,6 +167,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
+        mc.sharedMesh = mesh;
     }
 
     // function for the calculation of the diamond square algorithm
@@ -194,16 +197,13 @@ public class TerrainGenAndColor : MonoBehaviour
         //on update check if eft mouse key was pressed
         if (Input.GetMouseButton(0))
         {
-            //Debug.Log("Left mouse key pressed");
             activeClick = true;
 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (mc.Raycast(ray, out hit, 5000.0f))
             {
-                //Debug.Log("hit mesh");
                 clickpos = hit.point;
-                //Debug.Log(clickpos);
                 lastClick = clickpos;
                 Vector3 nearestVertex = Vector3.zero;
                 int index = 0;
@@ -230,9 +230,8 @@ public class TerrainGenAndColor : MonoBehaviour
 
             if (activeClick)
             {
-
+                //get mouse scroll wheel value
                 Vector2 delta = Input.mouseScrollDelta;
-
                 if (delta.y != 0)
                 {
                     Vector3[] verts = mesh.vertices;
@@ -256,14 +255,20 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     if(delta<0){
                         resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j+meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j+meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j+meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
                     } else{
                         resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j+meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j+meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j+meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
                     }
+
+                    //reset value to 0 if below 0
                     if(resultVerts[j].y < 0)
                     {
                         resultVerts[j].y = 0;
+                    }
+                    if(resultVerts[j+meshDivisions].y < 0)
+                    {
+                        resultVerts[j+meshDivisions].y = 0;
                     }
                 }
                 //x direction to the left
@@ -271,14 +276,20 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     if(delta<0){
                         resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j-meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j-meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j-meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
                     } else{
                         resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j-meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
+                        resultVerts[j-meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j-meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
                     }
+
+                    //reset value to 0 if below 0
                     if(resultVerts[j].y < 0)
                     {
                         resultVerts[j].y = 0;
+                    }
+                    if(resultVerts[j-meshDivisions].y < 0)
+                    {
+                        resultVerts[j-meshDivisions].y = 0;
                     }
                 }
                 //resultVerts[i].y = resultVerts[i].y*2;
@@ -326,5 +337,6 @@ public class TerrainGenAndColor : MonoBehaviour
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
+        mc.sharedMesh = mesh;
     }
 }
