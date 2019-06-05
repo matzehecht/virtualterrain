@@ -31,7 +31,8 @@ public class TerrainGenAndColor : MonoBehaviour
     Vector3 lastClick;
     Vector3 activeVert;
     int indexActiveVert = 0;
-    double variance = 2;
+    public double gaussianVariance = 20;
+    int size;
 
     // Start is called before the first frame update
     void Start()
@@ -52,6 +53,7 @@ public class TerrainGenAndColor : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        size = Convert.ToInt32(gaussianVariance*0.15);
         manipulate_Mesh_Mouse();
     }
 
@@ -201,7 +203,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
-            if (mc.Raycast(ray, out hit, 5000.0f))
+            if (mc.Raycast(ray, out hit, 500.0f))
             {
                 clickpos = hit.point;
                 lastClick = clickpos;
@@ -249,51 +251,66 @@ public class TerrainGenAndColor : MonoBehaviour
         {
             if (i == indexActiveVert)
             {
-                //Debug.Log(resultVerts[i].y); //Debug.Log(delta);if ((resultVerts[i].y += delta) < 0){resultVerts[i].y = 0;}
-                //x direction to the right
-                for(int j = i; j < i+4; j++)
-                {
-                    if(delta<0){
-                        resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j+meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j+meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
-                    } else{
-                        resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j+meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j+meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
-                    }
+                for(int k = 1; k < size; k++){
+                    //x direction to the right
+                    for(int j = i; j < i+size; j++)
+                    {
+                        if(delta<0){
+                            //new
+                            resultVerts[j].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
+                            resultVerts[j-k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                            resultVerts[j+k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                        } else{
+                            //new
+                            resultVerts[j].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
+                            resultVerts[j-k*meshDivisions-k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                            resultVerts[j+k*meshDivisions+k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                        }
 
-                    //reset value to 0 if below 0
-                    if(resultVerts[j].y < 0)
-                    {
-                        resultVerts[j].y = 0;
+                        //reset value to 0 if below 0
+                        if(resultVerts[j].y < 0)
+                        {
+                            resultVerts[j].y = 0;
+                        }
+                        if(resultVerts[j+k*meshDivisions+k].y < 0)
+                        {
+                            resultVerts[j+k*meshDivisions+k].y = 0;
+                        }
+                        if(resultVerts[j-k*meshDivisions-k].y < 0)
+                        {
+                            resultVerts[j-k*meshDivisions-k].y = 0;
+                        }
                     }
-                    if(resultVerts[j+meshDivisions].y < 0)
+                    //x direction to the left
+                    for(int j = i; j > i-size; j--)
                     {
-                        resultVerts[j+meshDivisions].y = 0;
+                        if(delta<0){
+                            //new
+                            resultVerts[j].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                            resultVerts[j-k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                            resultVerts[j+k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                        } else{
+                            //new
+                            resultVerts[j].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
+                            resultVerts[j-k*meshDivisions-k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                            resultVerts[j+k*meshDivisions+k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
+                        }
+
+                        //reset value to 0 if below 0
+                        if(resultVerts[j].y < 0)
+                        {
+                            resultVerts[j].y = 0;
+                        }
+                        if(resultVerts[j-k*meshDivisions-k].y < 0)
+                        {
+                            resultVerts[j-k*meshDivisions-k].y = 0;
+                        }
+                        if(resultVerts[j+k*meshDivisions+k].y < 0)
+                        {
+                            resultVerts[j+k*meshDivisions+k].y = 0;
+                        }
                     }
                 }
-                //x direction to the left
-                for(int j = i; j < i-4; j--)
-                {
-                    if(delta<0){
-                        resultVerts[j].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j-meshDivisions].y -= Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j-meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
-                    } else{
-                        resultVerts[j].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j].x),2)/(2*Math.Pow(variance,2))))));
-                        resultVerts[j-meshDivisions].y += Math.Abs(delta)*((float)(1/(Math.Sqrt(2*Math.PI*Math.Pow(variance,2)))* Math.Pow(Math.E, -(Math.Pow((resultVerts[j-meshDivisions].x),2)/(2*Math.Pow(variance,2))))));
-                    }
-
-                    //reset value to 0 if below 0
-                    if(resultVerts[j].y < 0)
-                    {
-                        resultVerts[j].y = 0;
-                    }
-                    if(resultVerts[j-meshDivisions].y < 0)
-                    {
-                        resultVerts[j-meshDivisions].y = 0;
-                    }
-                }
-                //resultVerts[i].y = resultVerts[i].y*2;
-                
             }
         }
         return resultVerts;
