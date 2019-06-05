@@ -51,6 +51,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _NormalMap1:
+        m_Texture: {fileID: 2800000, guid: 3b0eeda8bdb78404abf79018cf4bdb23, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap2:
+        m_Texture: {fileID: 2800000, guid: 96fef41e2e272954582cc3df3cbf85bc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -73,12 +81,14 @@ Material:
     - _GlossyReflections: 1
     - _Ka: 0.5
     - _Kd: 0.5
-    - _Ks: 0.5
+    - _Ks: 0.8
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Shininess: 10
+    - _ScrollSpeedX: 0.214
+    - _ScrollSpeedY: 0.221
+    - _Shininess: 8
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -88,4 +98,4 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _WaterColor: {r: 0, g: 0, b: 1, a: 1}
+    - _WaterColor: {r: 0.27772337, g: 0.27772337, b: 0.745283, a: 1}

@@ -5,6 +5,8 @@ ShaderImporter:
   defaultTextures:
   - _ColorTex: {fileID: 2800000, guid: 652d630bb8f3d4d4093ff9e98145c032, type: 3}
   - _WaterTex: {instanceID: 0}
+  - _NormalMap1: {fileID: 2800000, guid: 3b0eeda8bdb78404abf79018cf4bdb23, type: 3}
+  - _NormalMap2: {fileID: 2800000, guid: 96fef41e2e272954582cc3df3cbf85bc, type: 3}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 
