@@ -196,8 +196,8 @@ public class TerrainGenAndColor : MonoBehaviour
     //function for manipulating the mesh based on mouse input
     void manipulate_Mesh_Mouse()
     {
-        //on update check if eft mouse key was pressed
-        if (Input.GetMouseButton(0))
+        //on update check if right mouse key was pressed
+        if (Input.GetMouseButton(1))
         {
             activeClick = true;
 
@@ -237,10 +237,12 @@ public class TerrainGenAndColor : MonoBehaviour
                 if (delta.y != 0)
                 {
                     Vector3[] verts = mesh.vertices;
-                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 0.1f));
+                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 10.0f));
                     update_Mesh();
                 }
             }
+        } else{
+            mc.sharedMesh = mesh;
         }
     }
 
@@ -354,6 +356,6 @@ public class TerrainGenAndColor : MonoBehaviour
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
-        mc.sharedMesh = mesh;
+        //mc.sharedMesh = mesh;
     }
 }
