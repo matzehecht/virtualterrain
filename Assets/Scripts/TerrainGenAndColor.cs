@@ -19,7 +19,7 @@ public class TerrainGenAndColor : MonoBehaviour
     // size of the mesh (equal x and z size --> square)
     float meshSize = 30;
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
-    int meshDivisions = 64;
+    int meshDivisions = 128;
 
     // variables for maximum terrain height and binary water texture for color calculation in the shader afterwards
     float maxTerrainHeight;
