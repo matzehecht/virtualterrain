@@ -26,6 +26,9 @@
         _NormalMap2("Normal Map 2", 2D) = "bump" {}
         _ScrollSpeedX("Scroll Speed X", Range(0,2)) = 0.2
         _ScrollSpeedY("Scroll Speed Y", Range(0,2)) = 0.2
+
+        _NormalMapTerrain("Normal Map Terrain", 2D) = "bump" {}
+        [Toggle] _UseHeightline("Use Heightline", Float) = 0
     }
     SubShader
     {
@@ -78,7 +81,8 @@
             // variable definitions
             float _Ka, _Kd, _Ks, _maxTerrainHeight, _Shininess;
             float _ScrollSpeedX, _ScrollSpeedY;
-            sampler2D _ColorTex, _WaterTex, _NormalMap1, _NormalMap2;
+            float _UseHeightline;
+            sampler2D _ColorTex, _WaterTex, _NormalMap1, _NormalMap2, _NormalMapTerrain;
             float4 _WaterColor;
 
             // VERTEX SHADER
@@ -141,6 +145,8 @@
 				half3 tnormal1 = UnpackNormal(tex2D(_NormalMap1, fragIn.uv + float2(offsetX, 0))); 
 				half3 tnormal2 = UnpackNormal(tex2D(_NormalMap2, fragIn.uv + float2(0, offsetY)));
 
+                half3 tnormalTerrain = UnpackNormal(tex2D(_NormalMapTerrain, fragIn.uv));
+
                 // transform normal from tangent to world space (take both normal maps into account)
                 half3 worldNormal;
                 if(fragIn.worldPos.y <= 0) {
@@ -149,7 +155,10 @@
                     worldNormal.z = dot(fragIn.tspace2, (tnormal1 + tnormal2)/2);
                 }
                 else {
-                    worldNormal = fragIn.worldNormal;
+                    // worldNormal = fragIn.worldNormal;
+                    worldNormal.x = dot(fragIn.tspace0, tnormalTerrain);
+                    worldNormal.y = dot(fragIn.tspace1, tnormalTerrain);
+                    worldNormal.z = dot(fragIn.tspace2, tnormalTerrain);
                 }
 
                 // calculate ambient light color
@@ -172,8 +181,10 @@
                 // calculate and paint height lines to the terrain
                 float heightLinePnt = 0.02;
 
-                if(fragIn.worldPos.y % 0.5 < heightLinePnt && fragIn.worldPos.y > heightLinePnt) {
-                    color.rgb = float3(0, 0, 0);
+                if(_UseHeightline == 1) {
+                    if(fragIn.worldPos.y % 0.5 < heightLinePnt && fragIn.worldPos.y > heightLinePnt) {
+                        color.rgb = float3(0, 0, 0);
+                    }
                 }
 
                 return saturate(color);

@@ -9,6 +9,7 @@ public class TerrainGenAndColor : MonoBehaviour
     Mesh mesh;
     MeshCollider mc;
     Renderer rend;
+    ParticleSystem ps;
     // vertices, triangles and uv array for mesh generation
     Vector3[] vertices;
     int[] triangles;
@@ -23,6 +24,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
     // variables for maximum terrain height and binary water texture for color calculation in the shader afterwards
     float maxTerrainHeight;
+    Vector3 maxVertice;
     Texture2D waterTex;
 
     // init variables for click interactions with the terrain
@@ -44,6 +46,7 @@ public class TerrainGenAndColor : MonoBehaviour
         GetComponent<MeshFilter>().mesh = mesh;
         mc = GetComponent<MeshCollider>();
         mc.sharedMesh = mesh;
+        ps = GetComponent<ParticleSystem>();
 
         rend = GetComponent<Renderer>();
 
@@ -162,6 +165,13 @@ public class TerrainGenAndColor : MonoBehaviour
         rend.material.SetFloat("_maxTerrainHeight", maxTerrainHeight);
         rend.material.SetTexture("_WaterTex", waterTex);
 
+        var shape = ps.shape;
+        Debug.Log(shape.position);
+        maxVertice.y += 2;
+        Debug.Log(maxVertice);
+        shape.position = maxVertice;
+        Debug.Log(shape.position);
+
         // set mesh data and recalculate bounds and normals of the mesh afterwards
         mesh.vertices = vertices;
         mesh.uv = uvs;
@@ -190,7 +200,27 @@ public class TerrainGenAndColor : MonoBehaviour
         // set the maximum terrain height variable for the shader
         float maxValue = Math.Max(vertices[mid].y, Math.Max(vertices[topLeft + halfSize].y, Math.Max(vertices[mid - halfSize].y, Math.Max(vertices[mid + halfSize].y, vertices[botLeft + halfSize].y))));
         if (maxValue > maxTerrainHeight)
+        {
             maxTerrainHeight = maxValue;
+            // get the highest vertice
+            if(maxValue == vertices[mid].y)
+            {
+                maxVertice = vertices[mid];
+            } else if(maxValue == vertices[topLeft + halfSize].y)
+            {
+                maxVertice = vertices[topLeft + halfSize];
+            } else if(maxValue == vertices[mid - halfSize].y)
+            {
+                maxVertice = vertices[mid - halfSize];
+            } else if(maxValue == vertices[mid + halfSize].y)
+            {
+                maxVertice = vertices[mid + halfSize];
+            } else if(maxValue == vertices[botLeft + halfSize].y)
+            {
+                maxVertice = vertices[botLeft + halfSize];
+            }
+            Debug.Log(maxVertice);
+        }
     }
 
     //function for manipulating the mesh based on mouse input
@@ -340,11 +370,19 @@ public class TerrainGenAndColor : MonoBehaviour
                     if(mesh.vertices[i*(meshDivisions+1) + j].y > maxTerrainHeight)
                     {
                         maxTerrainHeight = mesh.vertices[i * (meshDivisions + 1) + j].y;
+                        maxVertice = mesh.vertices[i * (meshDivisions + 1) + j];
                     }
                     waterTex.SetPixel(i, j, Color.black);
                 }
             }
         }
+
+        var shape = ps.shape;
+        Debug.Log(shape.position);
+        maxVertice.y += 2;
+        Debug.Log(maxVertice);
+        shape.position = maxVertice;
+        Debug.Log(shape.position);
 
         // apply the calculated texture
         waterTex.Apply();

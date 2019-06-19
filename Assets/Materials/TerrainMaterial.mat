@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: TerrainMaterial
   m_Shader: {fileID: 4800000, guid: 49a76ffc49f4f304dad22d78475936bd, type: 3}
-  m_ShaderKeywords: 
+  m_ShaderKeywords: USE_HEIGHTLINE _USEHEIGHTLINE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -24,7 +24,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ColorTex:
-        m_Texture: {fileID: 2800000, guid: 652d630bb8f3d4d4093ff9e98145c032, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1b1a9e93cfbd41846911ac4f1a3f260f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -57,6 +57,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _NormalMap2:
         m_Texture: {fileID: 2800000, guid: 96fef41e2e272954582cc3df3cbf85bc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMapTerrain:
+        m_Texture: {fileID: 2800000, guid: 92069bab19151384c9e47b840ba970c4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -93,6 +97,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _UseHeightline: 1
     - _ZWrite: 1
     - _maxTerrainHeight: 5
     m_Colors:
