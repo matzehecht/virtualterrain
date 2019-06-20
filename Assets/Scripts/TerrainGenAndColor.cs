@@ -6,50 +6,54 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class TerrainGenAndColor : MonoBehaviour
 {
-    Mesh mesh;
-    MeshCollider mc;
-    Renderer rend;
-    ParticleSystem ps;
+    private Mesh mesh;
+    private MeshCollider mc;
+    private Renderer rend;
+    private ParticleSystem ps;
     // vertices, triangles and uv array for mesh generation
-    Vector3[] vertices;
-    int[] triangles;
-    Vector2[] uvs;
+    private Vector3[] vertices;
+    private int[] triangles;
+    private Vector2[] uvs;
 
     // base height of the mesh (editable in the IDE)
-    public float meshHeight = 4;
+    public float terrainOffset = 4;
     // size of the mesh (equal x and z size --> square)
-    float meshSize = 30;
+    private float meshSize = 30;
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
-    int meshDivisions = 128;
+    private int meshDivisions = 128;
 
-    // variables for maximum terrain height and binary water texture for color calculation in the shader afterwards
-    float maxTerrainHeight;
-    Vector3 maxVertice;
-    Texture2D waterTex;
+    /* variables for maximum terrain height and binary water texture for color calculation in 
+        the shader afterwards */
+    private float maxTerrainHeight;
+    private Vector3 maxVertice;
+    /* water texture could be used, to hand over a binary texture to the shader with information
+        about which areas are water and which areas are terrain */
+    // Texture2D waterTex;
 
     // init variables for click interactions with the terrain
-    bool activeClick = false;
-    Vector3 clickpos;
-    Vector3 lastClick;
-    Vector3 activeVert;
-    int indexActiveVert = 0;
+    private bool activeClick = false;
+    private Vector3 clickpos;
+    private Vector3 lastClick;
+    private Vector3 activeVert;
+    private int indexActiveVert = 0;
     public double gaussianVariance = 20;
-    int size;
+    private int size;
 
     // Start is called before the first frame update
     void Start()
     {
         // add new mesh object to the mesh filter and mesh collider defined on the empty game object
         mesh = new Mesh();
-        //set index format to 32 bit, -> more than 65K vertices can be rendered
+        // set index format to 32 bit -> more than 65K vertices could be rendered
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        // get some components of the game object to perform different actions with them afterwards
         GetComponent<MeshFilter>().mesh = mesh;
         mc = GetComponent<MeshCollider>();
         mc.sharedMesh = mesh;
         ps = GetComponent<ParticleSystem>();
-
         rend = GetComponent<Renderer>();
 
+        // call inital method for terrain generation with the diamond square algorithm
         CreateShape();
     }
 
@@ -60,6 +64,7 @@ public class TerrainGenAndColor : MonoBehaviour
         manipulate_Mesh_Mouse();
     }
 
+    // function for the creation of the initial terrain with the diamond square algorithm
     void CreateShape()
     {
         // define vertex and uv count 
@@ -73,7 +78,7 @@ public class TerrainGenAndColor : MonoBehaviour
         triangles = new int[meshDivisions * meshDivisions * 6];
 
         // define new texture with size of mesh divisions + 1
-        waterTex = new Texture2D(meshDivisions+1, meshDivisions+1);
+        // waterTex = new Texture2D(meshDivisions+1, meshDivisions+1);
 
         float halfSize = meshSize * 0.5f;
         float divisionSize = meshSize / meshDivisions;
@@ -111,16 +116,18 @@ public class TerrainGenAndColor : MonoBehaviour
             }
         }
 
-        // initiate the corner points with random values of the available height space
-        vertices[0].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
-        vertices[meshDivisions].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
-        vertices[vertices.Length - 1].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
-        vertices[vertices.Length - 1 - meshDivisions].y = UnityEngine.Random.Range(-meshHeight, meshHeight);
+        // initiate the corner points with random values of the available terrain offset space
+        vertices[0].y = UnityEngine.Random.Range(-terrainOffset, terrainOffset);
+        vertices[meshDivisions].y = UnityEngine.Random.Range(-terrainOffset, terrainOffset);
+        vertices[vertices.Length - 1].y = UnityEngine.Random.Range(-terrainOffset, terrainOffset);
+        vertices[vertices.Length - 1 - meshDivisions].y = UnityEngine.Random.Range(-terrainOffset, terrainOffset);
 
         // calculate the diamond square algorithm and set the terrain heights
+        // get the iterations count with the logarithmus of the mesh divisions count on base 2
         int iterations = (int)Mathf.Log(meshDivisions, 2);
         int numSquares = 1;
         int squareSize = meshDivisions;
+        // for each iteration, perform one diamond and one square step for all current squares
         for (int i = 0; i < iterations; i++)
         {
             int row = 0;
@@ -129,18 +136,23 @@ public class TerrainGenAndColor : MonoBehaviour
                 int col = 0;
                 for (int k = 0; k < numSquares; k++)
                 {
-                    DiamondSquare(row, col, squareSize, meshHeight);
+                    // call function, which executes the diamond square algorithm
+                    DiamondSquare(row, col, squareSize, terrainOffset);
                     col += squareSize;
                 }
                 row += squareSize;
             }
+            // double the amount of squares and half the square size in each iteration
             numSquares *= 2;
             squareSize /= 2;
-            meshHeight *= 0.5f;
+            // reduce the magnitude of the terrain offset in each iteration to the half
+            // to have a "smoother" terrain
+            terrainOffset *= 0.5f;
         }
 
-        // reset negative height values to 0 and set pixels of the water texture
-        // --> water pixels (height value 0) to white, terrain pixels (height value > 0) to black
+        // reset negative height values to 0 
+        // (and set pixels of the water texture --> water pixels (height value 0) to white, 
+        // terrain pixels (height value > 0) to black)
         for (int i = 0; i <= meshDivisions; i++)
         {
             for (int j = 0; j <= meshDivisions; j++)
@@ -148,29 +160,27 @@ public class TerrainGenAndColor : MonoBehaviour
                 if (vertices[i * (meshDivisions + 1) + j].y <= 0)
                 {
                     vertices[i * (meshDivisions + 1) + j].y = 0;
-                    waterTex.SetPixel(i, j, Color.white);
+                    // waterTex.SetPixel(i, j, Color.white);
                 }
-                else
+                /* else
                 {
                     waterTex.SetPixel(i, j, Color.black);
-                }
+                } */
             }
         }
 
         // apply the calculated texture
-        waterTex.Apply();
+        // waterTex.Apply();
 
-        // set the calculated maximum terrain height and water texture to the material, 
+        // set the calculated maximum terrain height (and water texture to the material), 
         // that the shader can work with this information
         rend.material.SetFloat("_maxTerrainHeight", maxTerrainHeight);
-        rend.material.SetTexture("_WaterTex", waterTex);
+        // rend.material.SetTexture("_WaterTex", waterTex);
 
+        // set the position of the snow falling shape above the highest terrain vertice + 2
         var shape = ps.shape;
-        Debug.Log(shape.position);
         maxVertice.y += 2;
-        Debug.Log(maxVertice);
         shape.position = maxVertice;
-        Debug.Log(shape.position);
 
         // set mesh data and recalculate bounds and normals of the mesh afterwards
         mesh.vertices = vertices;
@@ -185,24 +195,36 @@ public class TerrainGenAndColor : MonoBehaviour
     // function for the calculation of the diamond square algorithm
     void DiamondSquare(int row, int col, int size, float offset)
     {
+        // get the actual half square size and the top left and bottom left vertice index
         int halfSize = (int)(size * 0.5f);
         int topLeft = row * (meshDivisions + 1) + col;
         int botLeft = (row + size) * (meshDivisions + 1) + col;
 
+        // -- PERFORM DIAMOND STEP --
+        // get the middle vertice index based on the half square size
         int mid = (int)(row + halfSize) * (meshDivisions + 1) + (int)(col + halfSize);
+        // set the height of the middle vertice to the average of the four corner points and add
+        // a random value of the available offset range
         vertices[mid].y = (vertices[topLeft].y + vertices[topLeft + size].y + vertices[botLeft].y + vertices[botLeft + size].y) * 0.25f + UnityEngine.Random.Range(-offset, offset);
 
+        // -- PERFORM SQUARE STEP --
+        // During the square steps, points located on the edges of the array will have only three adjacent 
+        // values set rather than four. That's why in the following, only three adjacent values are used 
+        // for the average calculation, because this is the simplest way to handle the problem.
+
+        // for each "diamond" vertice, calculate the average height of the three adjacent points
+        // and add a random value of the available offset range
         vertices[topLeft + halfSize].y = (vertices[topLeft].y + vertices[topLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[mid - halfSize].y = (vertices[topLeft].y + vertices[botLeft].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[mid + halfSize].y = (vertices[topLeft + size].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[botLeft + halfSize].y = (vertices[botLeft].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
 
         // set the maximum terrain height variable for the shader
+        // also get the highest vertice in the terrain for the snow position
         float maxValue = Math.Max(vertices[mid].y, Math.Max(vertices[topLeft + halfSize].y, Math.Max(vertices[mid - halfSize].y, Math.Max(vertices[mid + halfSize].y, vertices[botLeft + halfSize].y))));
         if (maxValue > maxTerrainHeight)
         {
             maxTerrainHeight = maxValue;
-            // get the highest vertice
             if(maxValue == vertices[mid].y)
             {
                 maxVertice = vertices[mid];
@@ -219,7 +241,6 @@ public class TerrainGenAndColor : MonoBehaviour
             {
                 maxVertice = vertices[botLeft + halfSize];
             }
-            Debug.Log(maxVertice);
         }
     }
 
@@ -348,12 +369,10 @@ public class TerrainGenAndColor : MonoBehaviour
         return resultVerts;
     }
 
-    // function to recalculate the maximum terrain height and the water texture for the shader
+    // function to reset the negative vertice heights to null and to
+    // recalculate the highest vertice in the terrain (and the water texture for the shader)
     void update_Mesh()
     {
-        // reset maximum terrain height for the new calculation
-        maxTerrainHeight = 0;
-
         // reset negative height values to 0 and set pixels of the water texture
         // --> water pixels (height value 0) to white, terrain pixels (height value > 0) to black
         for (int i = 0; i <= meshDivisions; i++)
@@ -363,34 +382,28 @@ public class TerrainGenAndColor : MonoBehaviour
                 if (mesh.vertices[i * (meshDivisions + 1) + j].y <= 0)
                 {
                     mesh.vertices[i * (meshDivisions + 1) + j].y = 0;
-                    waterTex.SetPixel(i, j, Color.white);
+                    // waterTex.SetPixel(i, j, Color.white);
                 }
                 else
                 {
                     if(mesh.vertices[i*(meshDivisions+1) + j].y > maxTerrainHeight)
                     {
-                        maxTerrainHeight = mesh.vertices[i * (meshDivisions + 1) + j].y;
                         maxVertice = mesh.vertices[i * (meshDivisions + 1) + j];
                     }
-                    waterTex.SetPixel(i, j, Color.black);
+                    // waterTex.SetPixel(i, j, Color.black);
                 }
             }
         }
 
         var shape = ps.shape;
-        Debug.Log(shape.position);
         maxVertice.y += 2;
-        Debug.Log(maxVertice);
         shape.position = maxVertice;
-        Debug.Log(shape.position);
 
         // apply the calculated texture
-        waterTex.Apply();
+        // waterTex.Apply();
 
-        // set the calculated maximum terrain height and water texture to the material, 
-        // that the shader can work with this information
-        rend.material.SetFloat("_maxTerrainHeight", maxTerrainHeight);
-        rend.material.SetTexture("_WaterTex", waterTex);
+        // (set the water texture to the material, that the shader can work with this information)
+        // rend.material.SetTexture("_WaterTex", waterTex);
 
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();

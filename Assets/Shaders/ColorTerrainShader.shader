@@ -4,13 +4,12 @@
     {
         // Texture for the height colormap
         _ColorTex ("Color Texture", 2D) = "white" {}
-        // the maximum height of the terrain
-        _maxTerrainHeight("Max Terrain Height", float) = 5
 
-        // binary texture for water identification
-        _WaterTex ("Water Texture", 2D) = "white" {}
-        // color of the water
-        _WaterColor ("Water Color", Color) = (0, 0, 1, 1)
+        // Normal maps for the water surface
+        _NormalMap1("Normal Map 1", 2D) = "bump" {}
+        _NormalMap2("Normal Map 2", 2D) = "bump" {}
+        // Normal map for the terrain surface
+        _NormalMapTerrain("Normal Map Terrain", 2D) = "bump" {}
 
         // Reflectance of the ambient light
 		_Ka("Ambient Reflectance", Range(0, 1)) = 0.5
@@ -22,13 +21,23 @@
 		// Shininess for specular water surface
 		_Shininess("Shininess", Range(1, 50)) = 8
 
-        _NormalMap1("Normal Map 1", 2D) = "bump" {}
-        _NormalMap2("Normal Map 2", 2D) = "bump" {}
+        // binary texture for water identification
+        // _WaterTex ("Water Texture", 2D) = "white" {}
+        // color of the water
+        _WaterColor ("Water Color", Color) = (0, 0, 1, 1)
+        // scroll speed of the two water normal maps
         _ScrollSpeedX("Scroll Speed X", Range(0,2)) = 0.2
         _ScrollSpeedY("Scroll Speed Y", Range(0,2)) = 0.2
 
-        _NormalMapTerrain("Normal Map Terrain", 2D) = "bump" {}
+        // variables for the height line generation
         [Toggle] _UseHeightline("Use Heightline", Float) = 0
+        _HeightLineColor ("Height Line Color", Color) = (0, 0, 0, 1)
+        _HeightLineWidth ("Height Line Width", Range(0, 0.1)) = 0.02
+        _HeightLineDistance ("Height Line Distance", Range(0.5, 10)) = 1
+
+        // the maximum height of the terrain
+        // (set by the terrain generator script)
+        _maxTerrainHeight("Max Terrain Height", float) = 5
     }
     SubShader
     {
@@ -41,12 +50,13 @@
             Tags {"LightMode"="ForwardBase"}
 
             CGPROGRAM
-            // definition of used shaders and their names
+            // definition of used shaders (vertex and fragment shader)
+            // and their names
             #pragma vertex vert
             #pragma fragment frag
 
             #include "UnityCG.cginc"
-            #include "Lighting.cginc" // for lightning
+            #include "Lighting.cginc" // for lightning effects
 
             // input struct of vertex shader
             struct appdata
@@ -65,25 +75,28 @@
                 // base vertice color
                 float4 color : COLOR0;
                 // water texture (binary)
-                float4 watTexVal : TEXCOORD0;
+                // float4 watTexVal : TEXCOORD0;
                 // surface normals
-				half3 worldViewDir : TEXCOORD1;
-                half3 worldNormal : TEXCOORD2;
+				half3 worldViewDir : TEXCOORD0;
+                half3 worldNormal : TEXCOORD1;
 
-                half3 tspace0 : TEXCOORD3;
-                half3 tspace1 : TEXCOORD4;
-                half3 tspace2 : TEXCOORD5;
+                // variables for the tangent space matrix
+                half3 tspace0 : TEXCOORD2;
+                half3 tspace1 : TEXCOORD3;
+                half3 tspace2 : TEXCOORD4;
                 
-                float2 uv : TEXCOORD6;
-                float3 worldPos : TEXCOORD7;
+                // texture coordinates of the object
+                float2 uv : TEXCOORD5;
+                // coordinates in world space
+                float3 worldPos : TEXCOORD6;
             };
 
             // variable definitions
             float _Ka, _Kd, _Ks, _maxTerrainHeight, _Shininess;
-            float _ScrollSpeedX, _ScrollSpeedY;
+            float _ScrollSpeedX, _ScrollSpeedY, _HeightLineWidth, _HeightLineDistance;
             float _UseHeightline;
             sampler2D _ColorTex, _WaterTex, _NormalMap1, _NormalMap2, _NormalMapTerrain;
-            float4 _WaterColor;
+            float4 _WaterColor, _HeightLineColor;
 
             // VERTEX SHADER
             v2f vert (appdata vertexIn)
@@ -91,14 +104,15 @@
                 v2f vertexOut;
                 // transform vertices from object coordinates to clip coordinates
                 vertexOut.pos = UnityObjectToClipPos(vertexIn.vertex);
-                // get normalized world space direction from given object space vertex position towards the camera
+                // get normalized world space direction from given object space 
+                // vertex position towards the camera
                 vertexOut.worldViewDir = normalize(WorldSpaceViewDir(vertexIn.vertex));
+                // transform vertices from object to world coordinates
                 vertexOut.worldPos = mul(unity_ObjectToWorld, vertexIn.vertex);
 
                 // transform normal vectors to world coordinates
                 half3 worldNormal = UnityObjectToWorldNormal(vertexIn.normal);
                 vertexOut.worldNormal = worldNormal;
-
                 half3 worldTangent = UnityObjectToWorldDir(vertexIn.tangent);
                 
                 // compute bitangent from cross product of normal and tangent
@@ -112,20 +126,27 @@
 				vertexOut.tspace2 = half3(worldTangent.z, worldBitangent.z, worldNormal.z);
                 
                 // access water surface texture and extract color value (binary)
-                float4 watTexVal = tex2Dlod(_WaterTex, float4(vertexIn.texcoord.xy, 0, 0));
-                vertexOut.watTexVal = watTexVal;
+                // float4 watTexVal = tex2Dlod(_WaterTex, float4(vertexIn.texcoord.xy, 0, 0));
+                // vertexOut.watTexVal = watTexVal;
 
-                // access colormap texture and extract color values (based on height of the vertex divided by the maximum height of the terrain)
+                // access colormap texture and extract horizontal color values 
+                // (based on height of the vertex divided by the maximum height of the terrain)
                 float4 colTexVal = tex2Dlod(_ColorTex, float4(vertexIn.vertex.y / _maxTerrainHeight, 0, 0, 0));
-                // set color based on the water texture (if 0, then take height color, otherwise the water color)
-                // enough to check one color value (red) of the texture, because it's binary and eithor black or white
+                
+                // set color based on the terrain height
+                // if 0 set to the water color, if greater than the inital maximum 
+                // terrain height (maybe through height changes with mouse interactions)
+                // set to white (snow) and otherwise to the color from the colormap
                 if(vertexOut.worldPos.y <= 0) {
                     vertexOut.color = _WaterColor;
                 }
-                else {
+                else if(vertexOut.worldPos.y > _maxTerrainHeight) {
+                    vertexOut.color = (1, 1, 1, 1);
+                } else  {
                     vertexOut.color = colTexVal;
                 }
 
+                // put out object texture coordinates also
                 vertexOut.uv = vertexIn.texcoord;
 
                 return vertexOut;
@@ -141,13 +162,17 @@
                 float offsetY = _ScrollSpeedY * _Time;
 
                 // sample the first and second normal map, and decode from the Unity encoding
-                // add the calculated time offset to the normal maps (move the first normal map on x axis; second on y axis)
+                // add the calculated time offset to the normal maps 
+                // (move the first normal map on x axis; second on y axis)
 				half3 tnormal1 = UnpackNormal(tex2D(_NormalMap1, fragIn.uv + float2(offsetX, 0))); 
 				half3 tnormal2 = UnpackNormal(tex2D(_NormalMap2, fragIn.uv + float2(0, offsetY)));
 
+                // sample and decode the terrain normal map from the Unity encoding
                 half3 tnormalTerrain = UnpackNormal(tex2D(_NormalMapTerrain, fragIn.uv));
 
-                // transform normal from tangent to world space (take both normal maps into account)
+                // transform normal from tangent to world space 
+                // (for water surface take both normal maps into account,
+                // for the terrain surface take only the terrain normal map)
                 half3 worldNormal;
                 if(fragIn.worldPos.y <= 0) {
                     worldNormal.x = dot(fragIn.tspace0, (tnormal1 + tnormal2)/2);
@@ -178,12 +203,11 @@
                     color += _Ks * spec;
                 }
 
-                // calculate and paint height lines to the terrain
-                float heightLinePnt = 0.02;
-
+                // calculate and paint height lines to the terrain (hard override of the 
+                // before calculated color with the set height line color)
                 if(_UseHeightline == 1) {
-                    if(fragIn.worldPos.y % 0.5 < heightLinePnt && fragIn.worldPos.y > heightLinePnt) {
-                        color.rgb = float3(0, 0, 0);
+                    if(fragIn.worldPos.y % _HeightLineDistance < _HeightLineWidth && fragIn.worldPos.y > _HeightLineWidth) {
+                        color = _HeightLineColor;
                     }
                 }
 

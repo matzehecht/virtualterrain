@@ -83,6 +83,8 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _HeightLineDistance: 1
+    - _HeightLineWidth: 0.02
     - _Ka: 0.5
     - _Kd: 0.5
     - _Ks: 0.8
@@ -103,4 +105,5 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HeightLineColor: {r: 0, g: 0, b: 0, a: 1}
     - _WaterColor: {r: 0.27772337, g: 0.27772337, b: 0.745283, a: 1}
