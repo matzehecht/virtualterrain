@@ -261,11 +261,22 @@ public class TerrainGenAndColor : MonoBehaviour
     {
         if(double_click == true)
         {
+            //get GameObject of Main Camera
             GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
+
+            //get GameObject of Terrain
+            GameObject varTerrain = GameObject.FindWithTag("TerrainAreaTag");
+
+            //create new Quaternion to rotate Camera by 90 degrees
             Quaternion topView_Rot = Quaternion.Euler(90.0f, 0.0f, 0.0f);
-            Vector3 newPosition = new Vector3(0.0f, 50.0f, 0.0f);
+            
+            //create new Vector for new position, relative to the position of the terrain but with increased height
+            Vector3 newPosition = new Vector3(varTerrain.transform.position.x, varTerrain.transform.position.y + 30.0f, varTerrain.transform.position.z);
+
+            //do actual transformations
             varMainCamera.transform.rotation = topView_Rot;
             varMainCamera.transform.parent.position = newPosition;
+            varMainCamera.transform.localPosition = new Vector3(0, 0, 0); //transform position of camera relative to parent (capsule) position 
 
             //unlock mouse to present for manipulation
             if(Cursor.lockState == CursorLockMode.Locked)
@@ -285,6 +296,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
             if (activeClick)
             {
+                //use Raycast to detect hit
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
                 if (mc.Raycast(ray, out hit, 500.0f))
@@ -295,6 +307,7 @@ public class TerrainGenAndColor : MonoBehaviour
                     int index = 0;
                     float minDistanceSqr = Mathf.Infinity;
 
+                    //find nearest vertices in mesh
                     foreach (Vector3 vertex in mesh.vertices)
                     {
                         Vector3 diff = lastClick - vertex;

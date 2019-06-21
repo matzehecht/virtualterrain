@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657892, g: 0.4964127, b: 0.5748172, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -230,7 +230,7 @@ GameObject:
   - component: {fileID: 581485720}
   m_Layer: 0
   m_Name: GameObject
-  m_TagString: Untagged
+  m_TagString: TerrainAreaTag
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -320,8 +320,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46965b4018e5cd84db0a9dce978a1213, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshHeight: 4
+  terrainOffset: 4
   gaussianVariance: 20
+  double_click: 0
 --- !u!199 &581485720
 ParticleSystemRenderer:
   serializedVersion: 6
