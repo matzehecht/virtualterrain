@@ -38,6 +38,10 @@ public class TerrainGenAndColor : MonoBehaviour
     private int indexActiveVert = 0;
     public double gaussianVariance = 20;
     private int size;
+    public bool double_click = false;
+    private float doubleClickTimeLimit = 0.25f;
+    Quaternion startView_Rot;
+    Vector3 startCameraPosition;
 
     // Start is called before the first frame update
     void Start()
@@ -52,6 +56,14 @@ public class TerrainGenAndColor : MonoBehaviour
         mc.sharedMesh = mesh;
         ps = GetComponent<ParticleSystem>();
         rend = GetComponent<Renderer>();
+
+        //save start camera position
+        GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
+        startCameraPosition = varMainCamera.transform.parent.position;
+        startView_Rot = varMainCamera.transform.rotation;
+
+        //start routines for detecting single and double clicks
+        StartCoroutine(InputListener());
 
         // call inital method for terrain generation with the diamond square algorithm
         CreateShape();
@@ -247,53 +259,65 @@ public class TerrainGenAndColor : MonoBehaviour
     //function for manipulating the mesh based on mouse input
     void manipulate_Mesh_Mouse()
     {
-        //on update check if right mouse key was pressed
-        if (Input.GetMouseButton(1))
+        if(double_click == true)
         {
-            activeClick = true;
+            GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
+            Quaternion topView_Rot = Quaternion.Euler(90.0f, 0.0f, 0.0f);
+            Vector3 newPosition = new Vector3(0.0f, 50.0f, 0.0f);
+            varMainCamera.transform.rotation = topView_Rot;
+            varMainCamera.transform.parent.position = newPosition;
 
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (mc.Raycast(ray, out hit, 500.0f))
+            //unlock mouse to present for manipulation
+            if(Cursor.lockState == CursorLockMode.Locked)
             {
-                clickpos = hit.point;
-                lastClick = clickpos;
-                Vector3 nearestVertex = Vector3.zero;
-                int index = 0;
-                float minDistanceSqr = Mathf.Infinity;
-
-                foreach (Vector3 vertex in mesh.vertices)
-                {
-                    Vector3 diff = lastClick - vertex;
-                    float distSqr = diff.sqrMagnitude;
-                    if (distSqr < minDistanceSqr)
-                    {
-                        indexActiveVert = index;
-                        minDistanceSqr = distSqr;
-                        nearestVertex = vertex;
-                    }
-                    index++;
-                }
-                activeVert = nearestVertex;
+                Cursor.lockState = CursorLockMode.None;
             }
-            else
+
+            //now terrain manipulation is possible
+            if (Input.GetMouseButton(1))
             {
+                activeClick = true;
+            }
+            else{
                 activeClick = false;
+                mc.sharedMesh = mesh;
             }
 
             if (activeClick)
             {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hit;
+                if (mc.Raycast(ray, out hit, 500.0f))
+                {
+                    clickpos = hit.point;
+                    lastClick = clickpos;
+                    Vector3 nearestVertex = Vector3.zero;
+                    int index = 0;
+                    float minDistanceSqr = Mathf.Infinity;
+
+                    foreach (Vector3 vertex in mesh.vertices)
+                    {
+                        Vector3 diff = lastClick - vertex;
+                        float distSqr = diff.sqrMagnitude;
+                        if (distSqr < minDistanceSqr)
+                        {
+                            indexActiveVert = index;
+                            minDistanceSqr = distSqr;
+                            nearestVertex = vertex;
+                        }
+                        index++;
+                    }
+                    activeVert = nearestVertex;
+                }
                 //get mouse scroll wheel value
                 Vector2 delta = Input.mouseScrollDelta;
                 if (delta.y != 0)
                 {
                     Vector3[] verts = mesh.vertices;
-                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 10.0f));
+                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 50.0f));
                     update_Mesh();
                 }
             }
-        } else{
-            mc.sharedMesh = mesh;
         }
     }
 
@@ -408,5 +432,65 @@ public class TerrainGenAndColor : MonoBehaviour
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
         //mc.sharedMesh = mesh;
+    }
+
+    private IEnumerator InputListener() 
+    {
+        while(enabled)
+        { //Run as long as this is activ
+
+            if(Input.GetMouseButtonDown(0))
+                yield return ClickEvent();
+
+            yield return null;
+        }
+    }
+
+    private IEnumerator ClickEvent()
+    {
+        //pause a frame so you don't pick up the same mouse down event.
+        yield return new WaitForEndOfFrame();
+
+        float count = 0f;
+        while(count < doubleClickTimeLimit)
+        {
+            if(Input.GetMouseButtonDown(0))
+            {
+                DoubleClick();
+                yield break;
+            }
+            count += Time.deltaTime;// increment counter by change in time between frames
+            yield return null; // wait for the next frame
+        }
+        SingleClick();
+    }
+
+
+    private void SingleClick()
+    {
+        Debug.Log("Single Click");
+    }
+
+    private void DoubleClick()
+    {
+        Debug.Log("Double Click");
+        GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
+        if(double_click == false)
+        {
+            varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
+            double_click = true;
+        } 
+        else
+        {
+            varMainCamera.GetComponent<FlyingCamControl>().enabled = true;
+            varMainCamera.transform.parent.position = startCameraPosition;
+            varMainCamera.transform.rotation = startView_Rot;
+            //lock mouse to hide for control in first person
+            if(Cursor.lockState == CursorLockMode.None)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+            double_click = false;
+        }
     }
 }
