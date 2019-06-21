@@ -4,12 +4,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class LoadScreenOnClick : MonoBehaviour
+public class LoadSceneOnClick : MonoBehaviour
 {
     public InputField TerrainOffsetInput;
     public InputField GaussianVarianceInput;
 
-    public void clicked(int sceneIndex)
+    public static string TERRAIN_SCENE_NAME = "TerrainScene";
+
+    public void clicked()
     {
         bool anythingAlright = true;
         float tmpTerrainOffset;
@@ -30,7 +32,7 @@ public class LoadScreenOnClick : MonoBehaviour
         {
             StaticClass.TerrainOffset = tmpTerrainOffset;
             StaticClass.GaussianVariance = tmpGaussianVariance;
-            SceneManager.LoadScene("TerrainScene");
+            SceneManager.LoadScene(TERRAIN_SCENE_NAME);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FlyingCamControl : MonoBehaviour
 {
@@ -22,6 +23,7 @@ public class FlyingCamControl : MonoBehaviour
 
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
+    public static string MAIN_MENUE_SCENE = "MainMenue";
 
     void Start()
     {
@@ -62,6 +64,15 @@ public class FlyingCamControl : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.End))
         {
             Cursor.lockState = (Cursor.lockState != CursorLockMode.Locked) ? Cursor.lockState = CursorLockMode.Locked : Cursor.lockState = CursorLockMode.None; ;
+        }
+
+
+        if (Input.GetKey(KeyCode.P))
+        {
+            if (Cursor.lockState != CursorLockMode.None)
+                Cursor.lockState = CursorLockMode.None;
+            Debug.Log("Paused");
+            SceneManager.LoadScene(MAIN_MENUE_SCENE);
         }
     }
 }

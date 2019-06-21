@@ -16,7 +16,7 @@ public class TerrainGenAndColor : MonoBehaviour
     private Vector2[] uvs;
 
     // base height of the mesh (editable in the IDE)
-    public float terrainOffset = 4;
+    private float terrainOffset;
     // size of the mesh (equal x and z size --> square)
     private float meshSize = 30;
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
@@ -36,12 +36,14 @@ public class TerrainGenAndColor : MonoBehaviour
     private Vector3 lastClick;
     private Vector3 activeVert;
     private int indexActiveVert = 0;
-    public double gaussianVariance = 20;
+    private double gaussianVariance;
     private int size;
 
     // Start is called before the first frame update
     void Start()
     {
+        terrainOffset = StaticClass.TerrainOffset;
+        gaussianVariance = StaticClass.GaussianVariance;
         // add new mesh object to the mesh filter and mesh collider defined on the empty game object
         mesh = new Mesh();
         // set index format to 32 bit -> more than 65K vertices could be rendered
