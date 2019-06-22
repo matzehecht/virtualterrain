@@ -6,33 +6,55 @@ using UnityEngine.UI;
 
 public class LoadSceneOnClick : MonoBehaviour
 {
-    public InputField TerrainOffsetInput;
-    public InputField GaussianVarianceInput;
+    public InputField terrainOffsetInput;
+    public InputField gaussianVarianceInput;
+    public Toggle useHeightline;
+    public InputField heightlineColorR;
+    public InputField heightlineColorG;
+    public InputField heightlineColorB;
 
     public static string TERRAIN_SCENE_NAME = "TerrainScene";
 
     public void clicked()
     {
-        bool anythingAlright = true;
-        float tmpTerrainOffset;
-        double tmpGaussianVariance;
-
-        if (!float.TryParse(TerrainOffsetInput.text, out tmpTerrainOffset))
+        if (!StaticClass.setTerrainOffset(float.Parse(terrainOffsetInput.text)))
         {
-            TerrainOffsetInput.image.color = Color.red;
-            anythingAlright = false;
-        }
-        if (!double.TryParse(GaussianVarianceInput.text, out tmpGaussianVariance))
-        {
-            GaussianVarianceInput.image.color = Color.red;
-            anythingAlright = false;
+            terrainOffsetInput.image.color = Color.red;
+            return;
         }
 
-        if (anythingAlright)
+        if (!StaticClass.setGaussianVariance(double.Parse(gaussianVarianceInput.text)))
         {
-            StaticClass.TerrainOffset = tmpTerrainOffset;
-            StaticClass.GaussianVariance = tmpGaussianVariance;
-            SceneManager.LoadScene(TERRAIN_SCENE_NAME);
+            gaussianVarianceInput.image.color = Color.red;
+            return;
         }
+
+        if (!StaticClass.setUseHeightline(useHeightline.isOn))
+        {
+            useHeightline.image.color = Color.red;
+            return;
+        }
+
+        if (!StaticClass.setHeightlineColorR(int.Parse(heightlineColorR.text)))
+        {
+            heightlineColorR.image.color = Color.red;
+            return;
+        }
+
+
+        if (!StaticClass.setHeightlineColorG(int.Parse(heightlineColorG.text)))
+        {
+            heightlineColorG.image.color = Color.red;
+            return;
+        }
+
+
+        if (!StaticClass.setHeightlineColorB(int.Parse(heightlineColorB.text)))
+        {
+            heightlineColorB.image.color = Color.red;
+            return;
+        }
+
+        SceneManager.LoadScene(TERRAIN_SCENE_NAME);
     }
 }

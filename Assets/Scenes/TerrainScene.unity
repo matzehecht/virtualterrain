@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -228,6 +228,7 @@ GameObject:
   - component: {fileID: 581485715}
   - component: {fileID: 581485721}
   - component: {fileID: 581485720}
+  - component: {fileID: 581485722}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -320,8 +321,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46965b4018e5cd84db0a9dce978a1213, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshHeight: 4
-  gaussianVariance: 20
 --- !u!199 &581485720
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -5042,6 +5041,18 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!114 &581485722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 581485714}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc96c3e7bf1bd9e478fb1203be716588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
