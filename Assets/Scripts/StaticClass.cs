@@ -2,8 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StaticClass
+public static class StaticClass
 {
+    // Using a static class and its attributes to transfer the values of the menu scene to the terrain scene.
+    // Thís class have to use static attributes and functions because their value should be the same in the 
+    // object instantiated by the MainMenue and the object instantiated by the TerrainScene.
+    // All the getter functions are simply returning the value of the attributes.
+    // The setters are returning true if the value to set is valid and false if it is invalid.
+    // For the most setters all values of the specified types are valid.
+    // The setters for the color values are setting the attributes of the color object.
+    // Also the setters for the colot values are checking wether the value to set is between 0 and 255.
+
     private static float terrainOffset = 10;
     private static double gaussianVariance = 20;
     private static bool useHeightline = true;
@@ -37,7 +46,6 @@ public class StaticClass
 
     public static bool setUseHeightline(bool use)
     {
-        Debug.Log(use);
         useHeightline = use;
         return true;
     }
