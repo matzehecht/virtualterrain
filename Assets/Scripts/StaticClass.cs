@@ -14,7 +14,6 @@ public static class StaticClass
     // Also the setters for the colot values are checking wether the value to set is between 0 and 255.
 
     private static float terrainOffset = 10;
-    private static double gaussianVariance = 20;
     private static bool useHeightline = true;
     private static Color heightlineColor = new Color(0, 0, 0);
 
@@ -26,16 +25,6 @@ public static class StaticClass
     public static bool setTerrainOffset(float offset)
     {
         terrainOffset = offset;
-        return true;
-    }
-    public static double getGaussianVariance()
-    {
-        return gaussianVariance;
-    }
-
-    public static bool setGaussianVariance(double variance)
-    {
-        gaussianVariance = variance;
         return true;
     }
 

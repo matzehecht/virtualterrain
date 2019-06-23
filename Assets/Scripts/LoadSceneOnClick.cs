@@ -8,7 +8,6 @@ public class LoadSceneOnClick : MonoBehaviour
 {
     // References for all the inputs
     public InputField terrainOffsetInput;
-    public InputField gaussianVarianceInput;
     public Toggle useHeightline;
     public InputField heightlineColorR;
     public InputField heightlineColorG;
@@ -34,16 +33,6 @@ public class LoadSceneOnClick : MonoBehaviour
         else
         {
             terrainOffsetInput.image.color = Color.red;
-            everythingAlright = false;
-        }
-
-        if (StaticClass.setGaussianVariance(double.Parse(gaussianVarianceInput.text)))
-        {
-            gaussianVarianceInput.image.color = Color.white;
-        }
-        else
-        {
-            gaussianVarianceInput.image.color = Color.red;
             everythingAlright = false;
         }
 
