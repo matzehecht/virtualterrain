@@ -32,16 +32,21 @@ public class TerrainGenAndColor : MonoBehaviour
 
     // init variables for click interactions with the terrain
     private bool activeClick = false;
-    private Vector3 clickpos;
-    private Vector3 lastClick;
-    private Vector3 activeVert;
-    private int indexActiveVert = 0;
-    public double gaussianVariance = 20;
-    private int size;
+    private int indexActiveVert;
+    public double gaussianVariance = 2;
+    private double size = 1.5;
     public bool double_click = false;
     private float doubleClickTimeLimit = 0.25f;
+    public float gaussianBellWidth = 10.0f;
+    public float gaussianBellHeightScale = 20.0f;
     Quaternion startView_Rot;
     Vector3 startCameraPosition;
+    //save start camera position
+    GameObject varMainCamera;
+    //get GameObject of Terrain
+    GameObject varTerrain;
+    //create new Quaternion to rotate Camera by 90 degrees
+    Quaternion topView_Rot = Quaternion.Euler(90.0f, 0.0f, 0.0f);
 
     // Start is called before the first frame update
     void Start()
@@ -57,22 +62,23 @@ public class TerrainGenAndColor : MonoBehaviour
         ps = GetComponent<ParticleSystem>();
         rend = GetComponent<Renderer>();
 
-        //save start camera position
-        GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
-        startCameraPosition = varMainCamera.transform.parent.position;
-        startView_Rot = varMainCamera.transform.rotation;
-
         //start routines for detecting single and double clicks
         StartCoroutine(InputListener());
 
         // call inital method for terrain generation with the diamond square algorithm
         CreateShape();
+
+        this.varMainCamera  = GameObject.FindWithTag("MainCamera");
+        this.varTerrain = GameObject.FindWithTag("TerrainAreaTag");
+
+        //save position and rotation at start
+        startCameraPosition = this.varMainCamera.transform.parent.position;
+        startView_Rot = this.varMainCamera.transform.rotation;
     }
 
     // Update is called once per frame
     private void Update()
     {
-        size = Convert.ToInt32(gaussianVariance*0.15);
         manipulate_Mesh_Mouse();
     }
 
@@ -259,24 +265,16 @@ public class TerrainGenAndColor : MonoBehaviour
     //function for manipulating the mesh based on mouse input
     void manipulate_Mesh_Mouse()
     {
+        //manipulation only available after double click
         if(double_click == true)
-        {
-            //get GameObject of Main Camera
-            GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
-
-            //get GameObject of Terrain
-            GameObject varTerrain = GameObject.FindWithTag("TerrainAreaTag");
-
-            //create new Quaternion to rotate Camera by 90 degrees
-            Quaternion topView_Rot = Quaternion.Euler(90.0f, 0.0f, 0.0f);
-            
+        {   
             //create new Vector for new position, relative to the position of the terrain but with increased height
-            Vector3 newPosition = new Vector3(varTerrain.transform.position.x, varTerrain.transform.position.y + 30.0f, varTerrain.transform.position.z);
+            Vector3 newPosition = new Vector3(this.varTerrain.transform.position.x, this.varTerrain.transform.position.y + 30.0f, this.varTerrain.transform.position.z);
 
             //do actual transformations
-            varMainCamera.transform.rotation = topView_Rot;
-            varMainCamera.transform.parent.position = newPosition;
-            varMainCamera.transform.localPosition = new Vector3(0, 0, 0); //transform position of camera relative to parent (capsule) position 
+            this.varMainCamera.transform.rotation = this.topView_Rot;
+            this.varMainCamera.transform.parent.position = newPosition;
+            this.varMainCamera.transform.localPosition = new Vector3(0, 0, 0); //transform position of camera relative to parent (capsule) position 
 
             //unlock mouse to present for manipulation
             if(Cursor.lockState == CursorLockMode.Locked)
@@ -284,167 +282,128 @@ public class TerrainGenAndColor : MonoBehaviour
                 Cursor.lockState = CursorLockMode.None;
             }
 
-            //now terrain manipulation is possible
+            //enable manipulation with clicking right on mouse
             if (Input.GetMouseButton(1))
             {
-                activeClick = true;
-            }
-            else{
-                activeClick = false;
-                mc.sharedMesh = mesh;
+                // The assignment is only done before the raycast to improve the 
+                // performance during manipulation
+                this.mc.sharedMesh = this.mesh;
+
+                // Return if selected point is not on the terrain
+                if (!Physics.Raycast(
+                    Camera.main.ScreenPointToRay(Input.mousePosition),
+                    out RaycastHit hit,
+                    300.0f
+                ))
+                    return;
+                
+                this.activeClick = true;
+
+                // Get the index of the vertex closest to the hit point
+                this.indexActiveVert = GetClosestVertexToPoint(hit);
             }
 
-            if (activeClick)
+            //disable manipulation with clicking left on mouse
+            if(Input.GetMouseButton(0))
             {
-                //use Raycast to detect hit
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (mc.Raycast(ray, out hit, 500.0f))
-                {
-                    clickpos = hit.point;
-                    lastClick = clickpos;
-                    Vector3 nearestVertex = Vector3.zero;
-                    int index = 0;
-                    float minDistanceSqr = Mathf.Infinity;
+                this.activeClick = false;
+            }
 
-                    //find nearest vertices in mesh
-                    foreach (Vector3 vertex in mesh.vertices)
-                    {
-                        Vector3 diff = lastClick - vertex;
-                        float distSqr = diff.sqrMagnitude;
-                        if (distSqr < minDistanceSqr)
-                        {
-                            indexActiveVert = index;
-                            minDistanceSqr = distSqr;
-                            nearestVertex = vertex;
-                        }
-                        index++;
-                    }
-                    activeVert = nearestVertex;
-                }
+            if (this.activeClick)
+            {
                 //get mouse scroll wheel value
-                Vector2 delta = Input.mouseScrollDelta;
-                if (delta.y != 0)
+                float mouse_delta = Input.mouseScrollDelta.y;
+                if (mouse_delta != 0)
                 {
-                    Vector3[] verts = mesh.vertices;
-                    mesh.vertices = moveVerts(verts, indexActiveVert, (delta.y * 50.0f));
+                    moveVerts(
+                        this.indexActiveVert,
+                        mouse_delta /10);
                     update_Mesh();
                 }
             }
         }
     }
 
-    Vector3[] moveVerts(Vector3[] verts, int indexActiveVert, float delta)
+    /** Return the index of the vertex closest to the hit point. */
+    private int GetClosestVertexToPoint(RaycastHit hit)
     {
-        Vector3[] resultVerts = verts;
-        for (int i = 0; i < verts.Length; i++)
+        // The hit triangle
+        int[] hitTriangle = new int[3] {
+            this.mesh.triangles[hit.triangleIndex * 3 + 0],
+            this.mesh.triangles[hit.triangleIndex * 3 + 1],
+            this.mesh.triangles[hit.triangleIndex * 3 + 2]
+        };
+
+        // Loop the hit triangle for determining the vertex closest to the hit point
+        float closestDistance = Vector3.Distance(
+            this.vertices[hitTriangle[0]],
+            hit.point
+        );
+        int closestVertex = hitTriangle[0];
+        for (int i = 0; i < hitTriangle.Length; i++)
         {
-            if (i == indexActiveVert)
+            float distance = Vector3.Distance(
+                this.vertices[hitTriangle[i]],
+                hit.point
+            );
+            if (distance < closestDistance)
             {
-                for(int k = 1; k < size; k++){
-                    //x direction to the right
-                    for(int j = i; j < i+size; j++)
-                    {
-                        if(delta<0){
-                            //new
-                            resultVerts[j].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
-                            resultVerts[j-k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                            resultVerts[j+k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                        } else{
-                            //new
-                            resultVerts[j].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
-                            resultVerts[j-k*meshDivisions-k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                            resultVerts[j+k*meshDivisions+k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                        }
-
-                        //reset value to 0 if below 0
-                        if(resultVerts[j].y < 0)
-                        {
-                            resultVerts[j].y = 0;
-                        }
-                        if(resultVerts[j+k*meshDivisions+k].y < 0)
-                        {
-                            resultVerts[j+k*meshDivisions+k].y = 0;
-                        }
-                        if(resultVerts[j-k*meshDivisions-k].y < 0)
-                        {
-                            resultVerts[j-k*meshDivisions-k].y = 0;
-                        }
-                    }
-                    //x direction to the left
-                    for(int j = i; j > i-size; j--)
-                    {
-                        if(delta<0){
-                            //new
-                            resultVerts[j].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                            resultVerts[j-k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                            resultVerts[j+k*meshDivisions].y -= Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                        } else{
-                            //new
-                            resultVerts[j].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*(Math.Pow(resultVerts[j].x,2)-2*resultVerts[j].x*resultVerts[j].z+Math.Pow(resultVerts[j].z,2))))); 
-                            resultVerts[j-k*meshDivisions-k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j-k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j-k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                            resultVerts[j+k*meshDivisions+k].y += Math.Abs(delta)*((float)((1/(2*Math.PI*gaussianVariance*gaussianVariance*Math.Sqrt(1)))*Math.Exp(-(1/2)*((Math.Pow(resultVerts[j+k*meshDivisions].x,2)/Math.Pow(gaussianVariance,2))+(Math.Pow(resultVerts[j+k*meshDivisions].z,2)/Math.Pow(gaussianVariance,2))-(0))))); 
-                        }
-
-                        //reset value to 0 if below 0
-                        if(resultVerts[j].y < 0)
-                        {
-                            resultVerts[j].y = 0;
-                        }
-                        if(resultVerts[j-k*meshDivisions-k].y < 0)
-                        {
-                            resultVerts[j-k*meshDivisions-k].y = 0;
-                        }
-                        if(resultVerts[j+k*meshDivisions+k].y < 0)
-                        {
-                            resultVerts[j+k*meshDivisions+k].y = 0;
-                        }
-                    }
-                }
+                closestDistance = distance;
+                closestVertex = hitTriangle[i];
             }
         }
-        return resultVerts;
+
+        // Return the index of the closest vertex
+        return closestVertex;
+    }
+
+    void moveVerts(int midpoint, float mouseDelta)
+    {
+
+        //loop through vertices to changes heights of vertices
+        for(var i = 0; i < this.vertices.Length; i++)
+        {
+            //check if point within radius to make circular selection of vertices
+            double distanceZ = (double)this.vertices[i].z-this.vertices[midpoint].z;
+            double distanceX = (double)this.vertices[i].x-this.vertices[midpoint].x;
+
+            //calculate distance between to points
+            double distanceToCenterPoint = Math.Sqrt(Math.Pow(distanceX,2) + Math.Pow(distanceZ,2));
+
+            //only use those vertices in radius
+            if(distanceToCenterPoint <= size)
+            {
+                //gaussian distribution with scaling fir better visibility
+                this.vertices[i].y += (mouseDelta*20)*((float)((1 / (2 * Math.PI * Math.Pow(this.gaussianVariance, 2)*Math.Sqrt(1)))
+                    * Math.Exp(-(1.0f / 2)
+                    * (Math.Pow(distanceToCenterPoint*25, 2) / Math.Pow(this.gaussianVariance, 2))
+                    )
+                ));
+
+                //check if value below zero, if yes set to zero
+                this.vertices[i].y = this.vertices[i].y < 0 ? 0 : this.vertices[i].y;
+
+                //check if lager than current max vertice to change position of snow accordingly
+                if(this.vertices[i].y > this.maxVertice.y)
+                {
+                    //set max new vertice for changing position of
+                    maxVertice = vertices[i];
+                    var shape = this.ps.shape;
+                    maxVertice.y += 2;
+                    shape.position = maxVertice;
+                } 
+            }
+        }    
     }
 
     // function to reset the negative vertice heights to null and to
     // recalculate the highest vertice in the terrain (and the water texture for the shader)
     void update_Mesh()
     {
-        // reset negative height values to 0 and set pixels of the water texture
-        // --> water pixels (height value 0) to white, terrain pixels (height value > 0) to black
-        for (int i = 0; i <= meshDivisions; i++)
-        {
-            for (int j = 0; j <= meshDivisions; j++)
-            {
-                if (mesh.vertices[i * (meshDivisions + 1) + j].y <= 0)
-                {
-                    mesh.vertices[i * (meshDivisions + 1) + j].y = 0;
-                    // waterTex.SetPixel(i, j, Color.white);
-                }
-                else
-                {
-                    if(mesh.vertices[i*(meshDivisions+1) + j].y > maxTerrainHeight)
-                    {
-                        maxVertice = mesh.vertices[i * (meshDivisions + 1) + j];
-                    }
-                    // waterTex.SetPixel(i, j, Color.black);
-                }
-            }
-        }
-
-        var shape = ps.shape;
-        maxVertice.y += 2;
-        shape.position = maxVertice;
-
-        // apply the calculated texture
-        // waterTex.Apply();
-
-        // (set the water texture to the material, that the shader can work with this information)
-        // rend.material.SetTexture("_WaterTex", waterTex);
-
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
-        //mc.sharedMesh = mesh;
+        this.mesh.vertices = this.vertices;
+        this.mesh.RecalculateBounds();
+        this.mesh.RecalculateNormals();
+        this.mesh.RecalculateTangents();
     }
 
     private IEnumerator InputListener() 
@@ -461,7 +420,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
     private IEnumerator ClickEvent()
     {
-        //pause a frame so you don't pick up the same mouse down event.
+        //pause a frame so system doesn't pick up the same mouse down event.
         yield return new WaitForEndOfFrame();
 
         float count = 0f;
@@ -475,29 +434,28 @@ public class TerrainGenAndColor : MonoBehaviour
             count += Time.deltaTime;// increment counter by change in time between frames
             yield return null; // wait for the next frame
         }
-        SingleClick();
     }
 
-
-    private void SingleClick()
-    {
-        Debug.Log("Single Click");
-    }
-
+    //method executed when detectin double click
     private void DoubleClick()
     {
-        Debug.Log("Double Click");
-        GameObject varMainCamera = GameObject.FindWithTag("MainCamera");
+        //check whether double click was detected before (if game was in terrain manipulation)
         if(double_click == false)
         {
-            varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
+            //re-enable flying controls 
+            this.varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
             double_click = true;
         } 
         else
         {
-            varMainCamera.GetComponent<FlyingCamControl>().enabled = true;
-            varMainCamera.transform.parent.position = startCameraPosition;
-            varMainCamera.transform.rotation = startView_Rot;
+            //disable flying controls
+            this.varMainCamera.GetComponent<FlyingCamControl>().enabled = true;
+
+            //change position of capsule to start
+            this.varMainCamera.transform.parent.position = this.startCameraPosition;
+
+            //change rotation of camera back to default 
+            this.varMainCamera.transform.rotation = this.startView_Rot;
             //lock mouse to hide for control in first person
             if(Cursor.lockState == CursorLockMode.None)
             {
