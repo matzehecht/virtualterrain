@@ -83,8 +83,8 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _HeightLineDistance: 1
-    - _HeightLineWidth: 0.02
+    - _HeightLineDistance: 1.5
+    - _HeightLineWidth: 0.05
     - _Ka: 0.5
     - _Kd: 0.5
     - _Ks: 0.8
@@ -92,8 +92,8 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ScrollSpeedX: 0.214
-    - _ScrollSpeedY: 0.221
+    - _ScrollSpeedX: 0.25
+    - _ScrollSpeedY: 0.25
     - _Shininess: 8
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

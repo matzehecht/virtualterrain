@@ -713,8 +713,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1402216546}
   m_HandleRect: {fileID: 1402216545}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 0.9989014
+  m_Value: 0.107038416
+  m_Size: 0.45172948
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2590,7 +2590,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0000269341}
+  m_AnchoredPosition: {x: 0, y: 403.22665}
   m_SizeDelta: {x: 0, y: 823.61}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1120265908
@@ -2795,11 +2795,11 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 30
+    m_FontSize: 22
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 20
-    m_MaxSize: 60
+    m_MinSize: 2
+    m_MaxSize: 300
     m_Alignment: 3
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -2807,13 +2807,17 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "This is the project of Nicole Graf, Tim Leschinsky, Florian Gl\xF6kler
-    and Matthias Hecht.\nTo use it just enter the parameters and hit start!\nFor flying
-    around you can either use the arrows or WASD. For travelling faster use can hit
-    and keep pressing SHIFT. The same you can do with CTRL for slower. \nTo get your
-    mouse back press END or ESC. With P you will get back to menue.\nYou can manipulate
-    the terrain when your're in the manipualtion view. To go there double press the
-    left mouse key. Now you can hover the terrain with the mouse cursor and scroll
-    up/down to modify. By double clicking  again you're leaving the manipulation view."
+    and Matthias Hecht.\nTo use it just enter the parameters and hit start!\n\nFor
+    flying around you can either use the arrows or WASD. For travelling faster use
+    can hit and keep pressing SHIFT. The same you can do with CTRL for slower. With
+    Q you are able to climb with the camera and with E you can drop it.\nTo get your
+    mouse back when executing the scene in the Unity Editor, press END or ESC. With
+    P you will get back to menue.\n\nYou can manipulate the terrain when your're in
+    the manipulation view. To go there, double press (in Unity Editor) or single press
+    (in Windows Build) the left mouse key. Now you can hover the terrain with the
+    mouse cursor and scroll up/down while holding the right mouse key pressed to modify.
+    By double clicking (in Unity Editor) or single clicking (in Windows Build) again
+    you're leaving the manipulation view and are able to fly around the world again."
 --- !u!222 &1182656094
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4121,7 +4125,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1269615160}
   m_HandleRect: {fileID: 1269615159}
   m_Direction: 0
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
