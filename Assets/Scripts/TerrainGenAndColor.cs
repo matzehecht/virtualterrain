@@ -38,6 +38,7 @@ public class TerrainGenAndColor : MonoBehaviour
     private double gaussianVariance = 20;
     public double sizeOfGaussArea = 1.5;
     private float doubleClickTimeLimit = 0.25f;
+
     //start rotation of camera
     Quaternion startView_Rot;
     //create new Quaternion to rotate Camera by 90 degrees
@@ -370,13 +371,13 @@ public class TerrainGenAndColor : MonoBehaviour
             double distanceZ = (double)this.vertices[i].z-this.vertices[midpoint].z;
             double distanceX = (double)this.vertices[i].x-this.vertices[midpoint].x;
 
-            //calculate distance between to points
+            //calculate distance between two points
             double distanceToCenterPoint = Math.Sqrt(Math.Pow(distanceX,2) + Math.Pow(distanceZ,2));
 
             //only use those vertices in radius
             if(distanceToCenterPoint <= sizeOfGaussArea)
             {
-                //gaussian distribution with scaling fir better visibility
+                //gaussian distribution with scaling for better visibility
                 this.vertices[i].y += (mouseDelta*mouse_Scale)*((float)((1 / (2 * Math.PI * Math.Pow(this.gaussianVariance, 2)*Math.Sqrt(1)))
                     * Math.Exp(-(1.0f / 2)
                     * (Math.Pow(distanceToCenterPoint*25, 2) / Math.Pow(this.gaussianVariance, 2))
@@ -400,8 +401,6 @@ public class TerrainGenAndColor : MonoBehaviour
         }    
     }
 
-    // function to reset the negative vertice heights to null and to
-    // recalculate the highest vertice in the terrain (and the water texture for the shader)
     void update_Mesh()
     {
         this.mesh.vertices = this.vertices;
@@ -430,13 +429,16 @@ public class TerrainGenAndColor : MonoBehaviour
         float count = 0f;
         while(count < doubleClickTimeLimit)
         {
+            // check for double click within specified double click time frame
             if(Input.GetMouseButtonDown(0))
             {
                 DoubleClick();
                 yield break;
             }
-            count += Time.deltaTime;// increment counter by change in time between frames
-            yield return null; // wait for the next frame
+            // increment counter by change in time between frames
+            count += Time.deltaTime;
+            // wait for the next frame
+            yield return null;
         }
     }
 
@@ -454,9 +456,8 @@ public class TerrainGenAndColor : MonoBehaviour
             //re-enable flying controls 
             this.varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
             double_click = true;
-
         } 
-        //wasnT in manipulation mode
+        //wasn't in manipulation mode
         else
         {
             //disable flying controls
