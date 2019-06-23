@@ -17,7 +17,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
     // base height of the mesh (editable in the IDE)
     public float terrainOffset = 4;
-    // size of the mesh (equal x and z size --> square)
+    // sizeOfGaussArea of the mesh (equal x and z sizeOfGaussArea --> square)
     private float meshSize = 30;
     // count of divisions on the mesh square (e.g. if set to 5, 25 partial squares result) 
     private int meshDivisions = 128;
@@ -32,21 +32,22 @@ public class TerrainGenAndColor : MonoBehaviour
 
     // init variables for click interactions with the terrain
     private bool activeClick = false;
+    private bool double_click = false;
     private int indexActiveVert;
-    public double gaussianVariance = 2;
-    private double size = 1.5;
-    public bool double_click = false;
+    public int mouse_Scale = 20;
+    private double gaussianVariance = 20;
+    public double sizeOfGaussArea = 1.5;
     private float doubleClickTimeLimit = 0.25f;
-    public float gaussianBellWidth = 10.0f;
-    public float gaussianBellHeightScale = 20.0f;
+    //start rotation of camera
     Quaternion startView_Rot;
-    Vector3 startCameraPosition;
-    //save start camera position
-    GameObject varMainCamera;
-    //get GameObject of Terrain
-    GameObject varTerrain;
     //create new Quaternion to rotate Camera by 90 degrees
     Quaternion topView_Rot = Quaternion.Euler(90.0f, 0.0f, 0.0f);
+    //start camera position
+    Vector3 startCameraPosition;
+    //GameObject of Camera
+    GameObject varMainCamera;
+    //GameObject of Terrain
+    GameObject varTerrain;
 
     // Start is called before the first frame update
     void Start()
@@ -86,7 +87,7 @@ public class TerrainGenAndColor : MonoBehaviour
     void CreateShape()
     {
         // define vertex and uv count 
-        // need one more vertex on each coordinate than the defined division size
+        // need one more vertex on each coordinate than the defined division sizeOfGaussArea
         // (e.g. need 3*3 vertices for a plane out of 4 squares)
         int mVertCount = (meshDivisions + 1) * (meshDivisions + 1);
         vertices = new Vector3[mVertCount];
@@ -95,7 +96,7 @@ public class TerrainGenAndColor : MonoBehaviour
         // define count of triangle points (6 for one mesh square)
         triangles = new int[meshDivisions * meshDivisions * 6];
 
-        // define new texture with size of mesh divisions + 1
+        // define new texture with sizeOfGaussArea of mesh divisions + 1
         // waterTex = new Texture2D(meshDivisions+1, meshDivisions+1);
 
         float halfSize = meshSize * 0.5f;
@@ -160,7 +161,7 @@ public class TerrainGenAndColor : MonoBehaviour
                 }
                 row += squareSize;
             }
-            // double the amount of squares and half the square size in each iteration
+            // double the amount of squares and half the square sizeOfGaussArea in each iteration
             numSquares *= 2;
             squareSize /= 2;
             // reduce the magnitude of the terrain offset in each iteration to the half
@@ -199,6 +200,7 @@ public class TerrainGenAndColor : MonoBehaviour
         var shape = ps.shape;
         maxVertice.y += 2;
         shape.position = maxVertice;
+        maxVertice.y -=2;
 
         // set mesh data and recalculate bounds and normals of the mesh afterwards
         mesh.vertices = vertices;
@@ -211,19 +213,19 @@ public class TerrainGenAndColor : MonoBehaviour
     }
 
     // function for the calculation of the diamond square algorithm
-    void DiamondSquare(int row, int col, int size, float offset)
+    void DiamondSquare(int row, int col, int sizeOfGaussArea, float offset)
     {
-        // get the actual half square size and the top left and bottom left vertice index
-        int halfSize = (int)(size * 0.5f);
+        // get the actual half square sizeOfGaussArea and the top left and bottom left vertice index
+        int halfSize = (int)(sizeOfGaussArea * 0.5f);
         int topLeft = row * (meshDivisions + 1) + col;
-        int botLeft = (row + size) * (meshDivisions + 1) + col;
+        int botLeft = (row + sizeOfGaussArea) * (meshDivisions + 1) + col;
 
         // -- PERFORM DIAMOND STEP --
-        // get the middle vertice index based on the half square size
+        // get the middle vertice index based on the half square sizeOfGaussArea
         int mid = (int)(row + halfSize) * (meshDivisions + 1) + (int)(col + halfSize);
         // set the height of the middle vertice to the average of the four corner points and add
         // a random value of the available offset range
-        vertices[mid].y = (vertices[topLeft].y + vertices[topLeft + size].y + vertices[botLeft].y + vertices[botLeft + size].y) * 0.25f + UnityEngine.Random.Range(-offset, offset);
+        vertices[mid].y = (vertices[topLeft].y + vertices[topLeft + sizeOfGaussArea].y + vertices[botLeft].y + vertices[botLeft + sizeOfGaussArea].y) * 0.25f + UnityEngine.Random.Range(-offset, offset);
 
         // -- PERFORM SQUARE STEP --
         // During the square steps, points located on the edges of the array will have only three adjacent 
@@ -232,10 +234,10 @@ public class TerrainGenAndColor : MonoBehaviour
 
         // for each "diamond" vertice, calculate the average height of the three adjacent points
         // and add a random value of the available offset range
-        vertices[topLeft + halfSize].y = (vertices[topLeft].y + vertices[topLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
+        vertices[topLeft + halfSize].y = (vertices[topLeft].y + vertices[topLeft + sizeOfGaussArea].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
         vertices[mid - halfSize].y = (vertices[topLeft].y + vertices[botLeft].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
-        vertices[mid + halfSize].y = (vertices[topLeft + size].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
-        vertices[botLeft + halfSize].y = (vertices[botLeft].y + vertices[botLeft + size].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
+        vertices[mid + halfSize].y = (vertices[topLeft + sizeOfGaussArea].y + vertices[botLeft + sizeOfGaussArea].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
+        vertices[botLeft + halfSize].y = (vertices[botLeft].y + vertices[botLeft + sizeOfGaussArea].y + vertices[mid].y) / 3 + UnityEngine.Random.Range(-offset, offset);
 
         // set the maximum terrain height variable for the shader
         // also get the highest vertice in the terrain for the snow position
@@ -317,7 +319,7 @@ public class TerrainGenAndColor : MonoBehaviour
                 {
                     moveVerts(
                         this.indexActiveVert,
-                        mouse_delta /10);
+                        mouse_delta);
                     update_Mesh();
                 }
             }
@@ -371,10 +373,10 @@ public class TerrainGenAndColor : MonoBehaviour
             double distanceToCenterPoint = Math.Sqrt(Math.Pow(distanceX,2) + Math.Pow(distanceZ,2));
 
             //only use those vertices in radius
-            if(distanceToCenterPoint <= size)
+            if(distanceToCenterPoint <= sizeOfGaussArea)
             {
                 //gaussian distribution with scaling fir better visibility
-                this.vertices[i].y += (mouseDelta*20)*((float)((1 / (2 * Math.PI * Math.Pow(this.gaussianVariance, 2)*Math.Sqrt(1)))
+                this.vertices[i].y += (mouseDelta*mouse_Scale)*((float)((1 / (2 * Math.PI * Math.Pow(this.gaussianVariance, 2)*Math.Sqrt(1)))
                     * Math.Exp(-(1.0f / 2)
                     * (Math.Pow(distanceToCenterPoint*25, 2) / Math.Pow(this.gaussianVariance, 2))
                     )
@@ -386,11 +388,12 @@ public class TerrainGenAndColor : MonoBehaviour
                 //check if lager than current max vertice to change position of snow accordingly
                 if(this.vertices[i].y > this.maxVertice.y)
                 {
-                    //set max new vertice for changing position of
+                    // set the position of the snow falling shape above the highest terrain vertice + 2
                     maxVertice = vertices[i];
                     var shape = this.ps.shape;
                     maxVertice.y += 2;
                     shape.position = maxVertice;
+                    maxVertice.y -=2;
                 } 
             }
         }    
@@ -440,12 +443,14 @@ public class TerrainGenAndColor : MonoBehaviour
     private void DoubleClick()
     {
         //check whether double click was detected before (if game was in terrain manipulation)
+        //was in manipulation mode
         if(double_click == false)
         {
             //re-enable flying controls 
             this.varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
             double_click = true;
         } 
+        //wasnT in manipulation mode
         else
         {
             //disable flying controls

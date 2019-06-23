@@ -322,7 +322,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   terrainOffset: 4
   gaussianVariance: 20
-  double_click: 0
+  size: 1.5
+  Mouse_Scale: 20
 --- !u!199 &581485720
 ParticleSystemRenderer:
   serializedVersion: 6
