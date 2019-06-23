@@ -73,7 +73,7 @@ public class TerrainGenAndColor : MonoBehaviour
         this.varTerrain = GameObject.FindWithTag("TerrainAreaTag");
 
         //save position and rotation at start
-        startCameraPosition = this.varMainCamera.transform.parent.position;
+        startCameraPosition = this.varMainCamera.transform.position;
         startView_Rot = this.varMainCamera.transform.rotation;
     }
 
@@ -275,8 +275,7 @@ public class TerrainGenAndColor : MonoBehaviour
 
             //do actual transformations
             this.varMainCamera.transform.rotation = this.topView_Rot;
-            this.varMainCamera.transform.parent.position = newPosition;
-            this.varMainCamera.transform.localPosition = new Vector3(0, 0, 0); //transform position of camera relative to parent (capsule) position 
+            this.varMainCamera.transform.position = newPosition;
 
             //unlock mouse to present for manipulation
             if(Cursor.lockState == CursorLockMode.Locked)
@@ -446,9 +445,14 @@ public class TerrainGenAndColor : MonoBehaviour
         //was in manipulation mode
         if(double_click == false)
         {
+            // update to last camera position and rotation, to be able to reset to this
+            // after reentering the flying cam mode
+            startCameraPosition = this.varMainCamera.transform.position;
+            startView_Rot = this.varMainCamera.transform.rotation;
             //re-enable flying controls 
             this.varMainCamera.GetComponent<FlyingCamControl>().enabled = false;
             double_click = true;
+
         } 
         //wasnT in manipulation mode
         else
@@ -457,7 +461,7 @@ public class TerrainGenAndColor : MonoBehaviour
             this.varMainCamera.GetComponent<FlyingCamControl>().enabled = true;
 
             //change position of capsule to start
-            this.varMainCamera.transform.parent.position = this.startCameraPosition;
+            this.varMainCamera.transform.position = this.startCameraPosition;
 
             //change rotation of camera back to default 
             this.varMainCamera.transform.rotation = this.startView_Rot;
