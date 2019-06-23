@@ -52,6 +52,9 @@ public class TerrainGenAndColor : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Get the parameters past by the main menu
+        terrainOffset = StaticClass.getTerrainOffset();
+        gaussianVariance = StaticClass.getGaussianVariance();
         // add new mesh object to the mesh filter and mesh collider defined on the empty game object
         mesh = new Mesh();
         // set index format to 32 bit -> more than 65K vertices could be rendered

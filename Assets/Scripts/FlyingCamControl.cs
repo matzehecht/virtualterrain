@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FlyingCamControl : MonoBehaviour
 {
@@ -22,6 +23,8 @@ public class FlyingCamControl : MonoBehaviour
     private float rotationX = 0.0f;
     private float rotationY = 0.0f;
     private float cameraSensitivity = 90;
+
+    public static string MAIN_MENU_SCENE = "MainMenu";
 
     // Use this for initialization
     void Start()
@@ -81,6 +84,14 @@ public class FlyingCamControl : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.lockState = (Cursor.lockState != CursorLockMode.Locked) ? Cursor.lockState = CursorLockMode.Locked : Cursor.lockState = CursorLockMode.None; ;
+        }
+
+        // Switch back to main menu
+        if (Input.GetKey(KeyCode.P))
+        {
+            if (Cursor.lockState != CursorLockMode.None)
+                Cursor.lockState = CursorLockMode.None;
+            SceneManager.LoadScene(MAIN_MENU_SCENE);
         }
     }
 }
